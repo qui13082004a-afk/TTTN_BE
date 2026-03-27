@@ -1,12 +1,19 @@
-require('dotenv').config();
+const { sequelize } = require("./config/database"); 
 const express = require('express');
 const app = express();
-const port = process.env.PORT || 3000;
 
-app.get('/', (req, res) => {
-  res.send('Hello Qui! Project Node.js đã sẵn sàng.');
-});
+async function checkConnection() {
+  try {
+    await sequelize.authenticate();
+    console.log('Kết nối Database thành công! (Sequelize)');
+  } catch (error) {
+    console.error(' Không thể kết nối Database:', error);
+    process.exit(1); 
+  }
+}
 
+checkConnection();
+const port = process.env.PORT || 8080;
 app.listen(port, () => {
-  console.log(`Server đang chạy tại http://localhost:${port}`);
+  console.log(`🚀 Server đang chạy tại: http://localhost:${port}`);
 });
