@@ -1,5 +1,7 @@
-const dotenv = require("dotenv");
-dotenv.config();
+//const dotenv = require("dotenv");
+//dotenv.config();
+require("dotenv").config();
+console.log(process.env);
 
 const { Sequelize } = require("sequelize");
 

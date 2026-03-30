@@ -5,7 +5,7 @@ const GiangVien = sequelize.define("giang_vien", {
   id_giang_vien: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
-    primary_key: true,
+    primarykey: true, //ver1.1
     allowNull: false,
   },
   ho_ten: { type: DataTypes.STRING(255), allowNull: false },
