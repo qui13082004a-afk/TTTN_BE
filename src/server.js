@@ -2,7 +2,7 @@ const { sequelize } = require("./config/database");
 const express = require('express');
 const app = express();
 
-const importRoute = require("./api/import.route");
+const importRoute = require("./api/routes/index");
 
 // middleware ver1.1
 app.use(express.json());
