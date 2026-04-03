@@ -1,11 +1,11 @@
 const { DataTypes } = require("sequelize");
-const { sequelize } = require("../config/database.js");
+const { sequelize } = require("../../config/database.js");
 
 const GiangVien = sequelize.define("giang_vien", {
   id_giang_vien: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
-    primarykey: true, //ver1.1
+    primaryKey: true, //ver1.1
     allowNull: false,
   },
   ho_ten: { type: DataTypes.STRING(255), allowNull: false },

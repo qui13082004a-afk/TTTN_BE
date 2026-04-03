@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const { sequelize } = require("../config/database.js");
+const { sequelize } = require("../../config/database.js");
 
 const LopHoc = sequelize.define("lop_hoc", {
   id_lop: {
