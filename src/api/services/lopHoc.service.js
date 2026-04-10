@@ -1,5 +1,6 @@
 const lopHocRepo = require("../repositories/lopHoc.repository");
 const { GiangVien } = require("../models");
+const { Op } = require("sequelize");
 
 class LopHocService {
   async createClass(data) {
@@ -54,6 +55,42 @@ class LopHocService {
     const deleted = await lopHocRepo.delete(id);
     if (!deleted) throw new Error("Xóa lớp học thất bại");
     return deleted;
+  }
+
+  async searchByClassName(ten_lop) {
+    if (!ten_lop || ten_lop.trim() === "") {
+      throw new Error("Tên lớp không được để trống");
+    }
+    const classes = await lopHocRepo.findByClassName(ten_lop.trim());
+    return classes;
+  }
+
+  async searchByLecturerName(ten_giang_vien) {
+    if (!ten_giang_vien || ten_giang_vien.trim() === "") {
+      throw new Error("Tên giảng viên không được để trống");
+    }
+
+    // Tìm giảng viên theo tên
+    const lecturers = await GiangVien.findAll({
+      where: {
+        ho_ten: {
+          [Op.like]: `%${ten_giang_vien.trim()}%`
+        }
+      }
+    });
+
+    if (lecturers.length === 0) {
+      return [];
+    }
+
+    // Lấy ID giảng viên
+    const lecturer_ids = lecturers.map(l => l.id_giang_vien);
+
+    // Tìm tất cả lớp của các giảng viên này
+    const classes = await lopHocRepo.findAll();
+    const filtered = classes.filter(c => lecturer_ids.includes(c.id_giang_vien));
+
+    return filtered;
   }
 }
 

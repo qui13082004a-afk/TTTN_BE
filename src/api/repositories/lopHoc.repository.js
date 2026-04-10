@@ -1,4 +1,5 @@
 const { LopHoc } = require("../models");
+const { Op } = require("sequelize");
 
 class LopHocRepository {
   async create(data) {
@@ -15,6 +16,16 @@ class LopHocRepository {
 
   async findAll() {
     return await LopHoc.findAll();
+  }
+
+  async findByClassName(ten_lop) {
+    return await LopHoc.findAll({
+      where: {
+        ten_lop: {
+          [Op.like]: `%${ten_lop}%`
+        }
+      }
+    });
   }
 
   async update(id, data) {
