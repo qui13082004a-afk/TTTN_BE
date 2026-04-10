@@ -12,37 +12,43 @@ class ImportService {
     if (data.length === 0) throw new Error("File rỗng");
 
     let inserted = 0;
+    const warnings = [];
     const defaultPassword = await bcrypt.hash("123456", 10);
 
     for (const [index, row] of data.entries()) {
       // 2. Lấy dữ liệu theo đúng tên cột trong ảnh Excel của bạn
       // Lưu ý: Tên key phải viết y hệt tên cột ở dòng đầu tiên của file Excel
-      const hoLot = row["Họ lót"] || ""; 
-      const ten = row["Tên"] || "";
-      const email = row["Email"];
-      const maSV = row["Mã sinh viên"]; 
+      const hoLot = (row["Họ lót"] || "").toString().trim();
+      const ten = (row["Tên"] || "").toString().trim();
+      const email = (row["Email"] || "").toString().trim();
+      const maSV = row["Mã sinh viên"];
 
-      // 3. Kiểm tra dữ liệu bắt buộc (Email là quan trọng nhất để định danh)
+      // 3. Kiểm tra dữ liệu bắt buộc
+      if (!ten) {
+        throw new Error(`Dòng ${index + 2} bị thiếu Tên`);
+      }
       if (!email) {
-        throw new Error(`Dòng ${index + 2} bị thiếu Email`);
+        warnings.push(`Dòng ${index + 2} có tên nhưng thiếu Email`);
+        continue;
       }
 
-      // 4. Kiểm tra xem sinh viên đã tồn tại chưa (Dùng email)
       const exist = await sinhVienRepo.findByEmail(email);
-      if (exist) continue;
+      if (exist) {
+        warnings.push(`Dòng ${index + 2} đã có tài khoản trong hệ thống`);
+        continue;
+      }
 
-      // 5. Gộp Họ lót và Tên thành ho_ten để lưu vào Model SinhVien
       const hoTenDayDu = `${hoLot} ${ten}`.trim();
 
       await sinhVienRepo.create({
-        ho_ten: hoTenDayDu, // Khớp với trường ho_ten trong model
-        email: email,       // Khớp với trường email trong model
-        mat_khau: defaultPassword // Khớp với trường mat_khau trong model
+        ho_ten: hoTenDayDu,
+        email: email,
+        mat_khau: defaultPassword,
       });
       
       inserted++;
     }
-    return inserted;
+    return { inserted, warnings };
   }
 }
 

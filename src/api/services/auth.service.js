@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const sinhVienRepo = require("../repositories/sinhVien.repository");
 
 class AuthService {
@@ -7,9 +8,28 @@ class AuthService {
     if (!user) throw new Error("Sai email");
 
     const isMatch = await bcrypt.compare(password, user.mat_khau);
-    if (!isMatch) throw new Error("Sai mật khẩu"); 
+    if (!isMatch) throw new Error("Sai mật khẩu");
 
-    return user;
+    // Tạo JWT token
+    const token = jwt.sign(
+      {
+        id: user.id_sinh_vien,
+        email: user.email,
+        role: "sinhvien"
+      },
+      process.env.JWT_SECRET || "your-secret-key",
+      { expiresIn: "24h" }
+    );
+
+    return {
+      user: {
+        id: user.id_sinh_vien,
+        ho_ten: user.ho_ten,
+        email: user.email,
+        role: "sinhvien"
+      },
+      token
+    };
   }
 }
 

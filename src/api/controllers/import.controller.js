@@ -4,8 +4,15 @@ exports.importSinhVien = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "Chưa upload file" });
     
-    const count = await importService.importSinhVienFromExcel(req.file.path);
-    res.json({ message: `Import thành công ${count} sinh viên` });
+    const result = await importService.importSinhVienFromExcel(req.file.path);
+    if (typeof result === "object") {
+      return res.json({
+        message: `Import thành công ${result.inserted} sinh viên`,
+        warnings: result.warnings,
+      });
+    }
+
+    res.json({ message: `Import thành công ${result} sinh viên` });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
