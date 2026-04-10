@@ -93,3 +93,41 @@ exports.deleteClass = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+exports.searchByClassName = async (req, res) => {
+  try {
+    const { ten_lop } = req.query;
+
+    if (!ten_lop) {
+      return res.status(400).json({ message: "Tên lớp không được để trống" });
+    }
+
+    const classes = await lopHocService.searchByClassName(ten_lop);
+
+    res.json({
+      count: classes.length,
+      classes,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.searchByLecturerName = async (req, res) => {
+  try {
+    const { ten_giang_vien } = req.query;
+
+    if (!ten_giang_vien) {
+      return res.status(400).json({ message: "Tên giảng viên không được để trống" });
+    }
+
+    const classes = await lopHocService.searchByLecturerName(ten_giang_vien);
+
+    res.json({
+      count: classes.length,
+      classes,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
