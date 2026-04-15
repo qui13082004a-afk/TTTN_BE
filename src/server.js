@@ -24,8 +24,8 @@ async function checkConnection() {
 
 checkConnection();
 
-const port = process.env.PORT; 
-app.listen(port, () => {
-  console.log(`🚀 Server đang chạy tại: http://localhost:${port}`);
+const PORT = process.env.PORT; 
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`>>> Server đang chạy tại port: ${PORT}`);
 });
 console.log("IMPORT ROUTE:", importRoute);
