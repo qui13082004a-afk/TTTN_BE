@@ -12,6 +12,13 @@ const sequelize = new Sequelize(
   {
     host: process.env.DATABASE_HOST,
     dialect: "mysql",
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    },
+    logging: false
   }
 );
 const connect = async () => {

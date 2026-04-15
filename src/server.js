@@ -11,11 +11,6 @@ app.use(express.urlencoded({ extended: true }));
 // route
 app.use("/api", importRoute);
 
-// test route
-app.get("/", (req, res) => {
-  res.send("Server đang chạy...");
-});
-
 // check DB
 async function checkConnection() {
   try {
@@ -29,10 +24,8 @@ async function checkConnection() {
 
 checkConnection();
 
-const port = process.env.PORT || 8080; 
+const port = process.env.PORT; 
 app.listen(port, () => {
   console.log(`🚀 Server đang chạy tại: http://localhost:${port}`);
 });
-
-//test
 console.log("IMPORT ROUTE:", importRoute);

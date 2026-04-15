@@ -10,16 +10,16 @@ const authenticateToken = async (req, res, next) => {
       return res.status(401).json({ message: "Access token không được cung cấp" });
     }
 
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
+    if (!decoded || !decoded.id) {
+      return res.status(403).json({ message: "Token không hợp lệ" });
+    }
 
-    // Lấy thông tin user từ database
     const user = await userService.getProfileById(decoded.id);
     if (!user) {
       return res.status(401).json({ message: "Token không hợp lệ - user không tồn tại" });
     }
 
-    // Gán thông tin user vào request
     req.user = user;
     next();
   } catch (error) {
@@ -28,4 +28,11 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-module.exports = { authenticateToken };
+const authorizeLecturer = (req, res, next) => {
+  if (!req.user || req.user.role !== "giangvien") {
+    return res.status(403).json({ message: "Chỉ giảng viên mới có quyền thực hiện hành động này" });
+  }
+  next();
+};
+
+module.exports = { authenticateToken, authorizeLecturer }; 
