@@ -11,7 +11,6 @@ exports.importSinhVien = async (req, res) => {
         warnings: result.warnings,
       });
     }
-
     res.json({ message: `Import thành công ${result} sinh viên` });
   } catch (error) {
     res.status(400).json({ message: error.message });
