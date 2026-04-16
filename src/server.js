@@ -1,31 +1,27 @@
-const { sequelize } = require("./config/database"); 
-const express = require('express');
+const { sequelize } = require("./config/database");
+const express = require("express");
 const app = express();
 
 const importRoute = require("./api/routes/index");
 
-// middleware ver1.1
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// route
+app.get("/", (req, res) => {
+  res.status(200).send("Server is running");
+});
+
 app.use("/api", importRoute);
 
-// check DB
-async function checkConnection() {
+const PORT = process.env.PORT || 10000;
+
+app.listen(PORT, "0.0.0.0", async () => {
+  console.log(`>>> Server đang chạy tại port: ${PORT}`);
+
   try {
     await sequelize.authenticate();
-    console.log('Kết nối Database thành công! (Sequelize)');
+    console.log("Kết nối Database thành công! (Sequelize)");
   } catch (error) {
-    console.error(' Không thể kết nối Database:', error);
-    process.exit(1); 
+    console.error("Không thể kết nối Database:", error);
   }
-}
-
-checkConnection();
-
-const PORT = process.env.PORT; 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`>>> Server đang chạy tại port: ${PORT}`);
 });
-console.log("IMPORT ROUTE:", importRoute);
