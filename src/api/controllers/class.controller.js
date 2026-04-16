@@ -1,4 +1,5 @@
 const lopHocService = require("../services/lopHoc.service");
+const fs = require("fs/promises");
 
 exports.createClass = async (req, res) => {
   try {
@@ -8,6 +9,7 @@ exports.createClass = async (req, res) => {
       id_giang_vien,
       ten_lop,
       han_chot_dang_ky_nhom,
+      actor: req.user,
     });
 
     res.status(201).json({
@@ -129,5 +131,77 @@ exports.searchByLecturerName = async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+};
+
+exports.getStudentsByClassId = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await lopHocService.getStudentsByClassId(
+      Number(id),
+      req.user
+    );
+
+    res.json({
+      class: result.class,
+      count: result.students.length,
+      students: result.students,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.addStudentToClassByEmail = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email } = req.body;
+
+    const result = await lopHocService.addStudentToClassByEmail({
+      id_lop: Number(id),
+      email,
+      actor: req.user,
+    });
+
+    const message = result.created
+      ? "Thêm sinh viên vào lớp thành công"
+      : "Sinh viên đã có trong lớp";
+
+    res.json({
+      message,
+      student: result.student,
+      class: result.class,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.importStudentsToClass = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({ message: "Chưa upload file danh sách sinh viên" });
+    }
+
+    const result = await lopHocService.importStudentsToClassFromFile({
+      id_lop: Number(id),
+      filePath: req.file.path,
+      actor: req.user,
+    });
+
+    res.json({
+      message: `Đã thêm ${result.inserted} sinh viên vào lớp`,
+      class: result.class,
+      warnings: result.warnings,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  } finally {
+    if (req.file?.path) {
+      await fs.unlink(req.file.path).catch(() => {});
+    }
   }
 };

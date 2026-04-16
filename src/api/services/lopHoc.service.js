@@ -1,28 +1,31 @@
 const lopHocRepo = require("../repositories/lopHoc.repository");
-const { GiangVien } = require("../models");
+const sinhVienRepo = require("../repositories/sinhVien.repository");
+const { GiangVien, LopHoc, SinhVien, SinhVienLopHoc } = require("../models");
 const { Op } = require("sequelize");
+const XLSX = require("xlsx");
 
 class LopHocService {
   async createClass(data) {
-    const { id_giang_vien, ten_lop, han_chot_dang_ky_nhom } = data;
+    const { id_giang_vien, ten_lop, han_chot_dang_ky_nhom, actor } = data;
+    const lecturerId = actor?.role === "admin"
+      ? Number(id_giang_vien || actor.id_giang_vien)
+      : Number(actor?.id_giang_vien);
 
-    // Kiểm tra dữ liệu bắt buộc
-    if (!id_giang_vien) {
-      throw new Error("ID giảng viên không được để trống");
+    if (!lecturerId) {
+      throw new Error("ID giang vien khong duoc de trong");
     }
+
     if (!ten_lop) {
-      throw new Error("Tên lớp không được để trống");
+      throw new Error("Ten lop khong duoc de trong");
     }
 
-    // Kiểm tra giảng viên có tồn tại không
-    const lecturer = await GiangVien.findByPk(id_giang_vien);
+    const lecturer = await GiangVien.findByPk(lecturerId);
     if (!lecturer) {
-      throw new Error(`Giảng viên có ID ${id_giang_vien} không tồn tại`);
+      throw new Error(`Giang vien co ID ${lecturerId} khong ton tai`);
     }
 
-    // Tạo lớp học
     const newClass = await lopHocRepo.create({
-      id_giang_vien,
+      id_giang_vien: lecturerId,
       ten_lop: ten_lop.trim(),
       han_chot_dang_ky_nhom: han_chot_dang_ky_nhom || null,
     });
@@ -32,8 +35,45 @@ class LopHocService {
 
   async getClassById(id) {
     const lopHoc = await lopHocRepo.findById(id);
-    if (!lopHoc) throw new Error("Lớp học không tồn tại");
+    if (!lopHoc) throw new Error("Lop hoc khong ton tai");
     return lopHoc;
+  }
+
+  async getStudentsByClassId(id_lop, actor) {
+    if (!id_lop) {
+      throw new Error("ID lop khong duoc de trong");
+    }
+
+    const lopHoc = await LopHoc.findByPk(id_lop, {
+      include: [
+        {
+          model: SinhVien,
+          attributes: ["id_sinh_vien", "ho_ten", "email"],
+          through: {
+            attributes: [],
+          },
+        },
+      ],
+    });
+
+    if (!lopHoc) {
+      throw new Error("Lop hoc khong ton tai");
+    }
+
+    if (actor?.role !== "admin" && actor?.id_giang_vien && lopHoc.id_giang_vien !== actor.id_giang_vien) {
+      throw new Error("Ban khong co quyen xem danh sach sinh vien cua lop hoc nay");
+    }
+
+    return {
+      class: {
+        id_lop: lopHoc.id_lop,
+        ten_lop: lopHoc.ten_lop,
+        id_giang_vien: lopHoc.id_giang_vien,
+      },
+      students: (lopHoc.sinh_viens || []).sort((a, b) =>
+        String(a.ho_ten || "").localeCompare(String(b.ho_ten || ""), "vi")
+      ),
+    };
   }
 
   async getClassesByLecturer(id_giang_vien) {
@@ -47,19 +87,19 @@ class LopHocService {
 
   async updateClass(id, data) {
     const updated = await lopHocRepo.update(id, data);
-    if (!updated) throw new Error("Cập nhật lớp học thất bại");
+    if (!updated) throw new Error("Cap nhat lop hoc that bai");
     return updated;
   }
 
   async deleteClass(id) {
     const deleted = await lopHocRepo.delete(id);
-    if (!deleted) throw new Error("Xóa lớp học thất bại");
+    if (!deleted) throw new Error("Xoa lop hoc that bai");
     return deleted;
   }
 
   async searchByClassName(ten_lop) {
     if (!ten_lop || ten_lop.trim() === "") {
-      throw new Error("Tên lớp không được để trống");
+      throw new Error("Ten lop khong duoc de trong");
     }
     const classes = await lopHocRepo.findByClassName(ten_lop.trim());
     return classes;
@@ -67,10 +107,9 @@ class LopHocService {
 
   async searchByLecturerName(ten_giang_vien) {
     if (!ten_giang_vien || ten_giang_vien.trim() === "") {
-      throw new Error("Tên giảng viên không được để trống");
+      throw new Error("Ten giang vien khong duoc de trong");
     }
 
-    // Tìm giảng viên theo tên
     const lecturers = await GiangVien.findAll({
       where: {
         ho_ten: {
@@ -83,14 +122,151 @@ class LopHocService {
       return [];
     }
 
-    // Lấy ID giảng viên
-    const lecturer_ids = lecturers.map(l => l.id_giang_vien);
-
-    // Tìm tất cả lớp của các giảng viên này
+    const lecturer_ids = lecturers.map((l) => l.id_giang_vien);
     const classes = await lopHocRepo.findAll();
-    const filtered = classes.filter(c => lecturer_ids.includes(c.id_giang_vien));
+    const filtered = classes.filter((c) => lecturer_ids.includes(c.id_giang_vien));
 
     return filtered;
+  }
+
+  async addStudentToClassByEmail({ id_lop, email, actor }) {
+    if (!id_lop) {
+      throw new Error("ID lop khong duoc de trong");
+    }
+
+    const normalizedEmail = (email || "").trim().toLowerCase();
+    if (!normalizedEmail) {
+      throw new Error("Email sinh vien khong duoc de trong");
+    }
+
+    const lopHoc = await LopHoc.findByPk(id_lop);
+    if (!lopHoc) {
+      throw new Error("Lop hoc khong ton tai");
+    }
+
+    if (actor?.role !== "admin" && actor?.id_giang_vien && lopHoc.id_giang_vien !== actor.id_giang_vien) {
+      throw new Error("Ban khong co quyen them sinh vien vao lop hoc nay");
+    }
+
+    const student = await sinhVienRepo.findByEmail(normalizedEmail);
+    if (!student) {
+      throw new Error("Email co trong danh sach nhung sinh vien chua co tai khoan. Vui long tao tai khoan cho sinh vien truoc.");
+    }
+
+    const [enrollment, created] = await SinhVienLopHoc.findOrCreate({
+      where: {
+        id_sinh_vien: student.id_sinh_vien,
+        id_lop: lopHoc.id_lop,
+      },
+      defaults: {
+        id_sinh_vien: student.id_sinh_vien,
+        id_lop: lopHoc.id_lop,
+      },
+    });
+
+    return {
+      enrollment,
+      created,
+      student: {
+        id_sinh_vien: student.id_sinh_vien,
+        ho_ten: student.ho_ten,
+        email: student.email,
+      },
+      class: {
+        id_lop: lopHoc.id_lop,
+        ten_lop: lopHoc.ten_lop,
+      },
+    };
+  }
+
+  async importStudentsToClassFromFile({ id_lop, filePath, actor }) {
+    if (!id_lop) {
+      throw new Error("ID lop khong duoc de trong");
+    }
+
+    const lopHoc = await LopHoc.findByPk(id_lop);
+    if (!lopHoc) {
+      throw new Error("Lop hoc khong ton tai");
+    }
+
+    if (actor?.role !== "admin" && actor?.id_giang_vien && lopHoc.id_giang_vien !== actor.id_giang_vien) {
+      throw new Error("Ban khong co quyen them sinh vien vao lop hoc nay");
+    }
+
+    const workbook = XLSX.readFile(filePath, { raw: false });
+    const sheetName = workbook.SheetNames[0];
+    const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+      defval: "",
+    });
+
+    if (data.length === 0) {
+      throw new Error("File danh sach sinh vien dang rong");
+    }
+
+    let inserted = 0;
+    const warnings = [];
+
+    for (const [index, row] of data.entries()) {
+      const lineNumber = index + 2;
+      const email = this.extractEmailFromRow(row);
+
+      if (!email) {
+        warnings.push(`Dong ${lineNumber} chua co email`);
+        continue;
+      }
+
+      const student = await sinhVienRepo.findByEmail(email);
+      if (!student) {
+        warnings.push(`Dong ${lineNumber} co email ${email} nhung sinh vien chua co tai khoan trong he thong. Vui long giang vien tao tai khoan cho sinh vien truoc.`);
+        continue;
+      }
+
+      const [, created] = await SinhVienLopHoc.findOrCreate({
+        where: {
+          id_sinh_vien: student.id_sinh_vien,
+          id_lop: lopHoc.id_lop,
+        },
+        defaults: {
+          id_sinh_vien: student.id_sinh_vien,
+          id_lop: lopHoc.id_lop,
+        },
+      });
+
+      if (!created) {
+        warnings.push(`Dong ${lineNumber} voi email ${email} da co trong lop`);
+        continue;
+      }
+
+      inserted++;
+    }
+
+    return {
+      inserted,
+      warnings,
+      class: {
+        id_lop: lopHoc.id_lop,
+        ten_lop: lopHoc.ten_lop,
+      },
+    };
+  }
+
+  extractEmailFromRow(row) {
+    for (const [key, value] of Object.entries(row)) {
+      if (this.normalizeHeader(key) === "email") {
+        return String(value || "").trim().toLowerCase();
+      }
+    }
+
+    return "";
+  }
+
+  normalizeHeader(header) {
+    return String(header || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "");
   }
 }
 

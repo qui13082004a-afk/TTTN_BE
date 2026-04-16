@@ -1,6 +1,7 @@
 const { sequelize } = require("./config/database");
 const express = require("express");
 const app = express();
+const { SinhVienLopHoc } = require("./api/models");
 
 const importRoute = require("./api/routes/index");
 
@@ -20,6 +21,7 @@ app.listen(PORT, "0.0.0.0", async () => {
 
   try {
     await sequelize.authenticate();
+    await SinhVienLopHoc.sync();
     console.log("Kết nối Database thành công! (Sequelize)");
   } catch (error) {
     console.error("Không thể kết nối Database:", error);

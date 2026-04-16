@@ -4,35 +4,44 @@ const userService = require("../services/user.service");
 const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(" ")[1];
 
     if (!token) {
-      return res.status(401).json({ message: "Access token không được cung cấp" });
+      return res.status(401).json({ message: "Access token kh�ng du?c cung c?p" });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
     if (!decoded || !decoded.id) {
-      return res.status(403).json({ message: "Token không hợp lệ" });
+      return res.status(403).json({ message: "Token kh�ng h?p l?" });
     }
 
     const user = await userService.getProfileById(decoded.id);
     if (!user) {
-      return res.status(401).json({ message: "Token không hợp lệ - user không tồn tại" });
+      return res.status(401).json({ message: "Token kh�ng h?p l? - user kh�ng t?n t?i" });
     }
 
     req.user = user;
     next();
   } catch (error) {
     console.error("JWT verification error:", error);
-    return res.status(403).json({ message: "Token không hợp lệ" });
+    return res.status(403).json({ message: "Token kh�ng h?p l?" });
   }
 };
 
 const authorizeLecturer = (req, res, next) => {
-  if (!req.user || req.user.role !== "giangvien") {
-    return res.status(403).json({ message: "Chỉ giảng viên mới có quyền thực hiện hành động này" });
+  if (!req.user || !["giangvien", "admin"].includes(req.user.role)) {
+    return res.status(403).json({ message: "Ch? gi?ng vi�n ho?c admin m?i c� quy?n th?c hi?n h�nh d?ng n�y" });
   }
+
   next();
 };
 
-module.exports = { authenticateToken, authorizeLecturer }; 
+const authorizeAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ message: "Ch? admin m?i c� quy?n th?c hi?n h�nh d?ng n�y" });
+  }
+
+  next();
+};
+
+module.exports = { authenticateToken, authorizeLecturer, authorizeAdmin };

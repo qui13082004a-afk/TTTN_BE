@@ -30,12 +30,12 @@ class UserService {
     }
 
     const lecturer = await GiangVien.findByPk(id, {
-      attributes: ["id_giang_vien", "ho_ten", "email"],
+      attributes: ["id_giang_vien", "ho_ten", "email", "role"],
     });
     console.log("GiangVien result:", lecturer);
 
     if (lecturer) {
-      return { ...lecturer.toJSON(), role: "giangvien" };
+      return lecturer.toJSON();
     }
 
     return null;
