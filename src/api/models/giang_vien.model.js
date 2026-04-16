@@ -11,6 +11,11 @@ const GiangVien = sequelize.define("giang_vien", {
   ho_ten: { type: DataTypes.STRING(255), allowNull: false },
   email: { type: DataTypes.STRING(100), allowNull: false, unique: true },
   mat_khau: { type: DataTypes.STRING(255), allowNull: false },
+  role: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    defaultValue: "giangvien",
+  },
 }, { tableName: "giang_vien", timestamps: false });
 
 module.exports = GiangVien;
