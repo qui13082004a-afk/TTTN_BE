@@ -60,7 +60,11 @@ class LopHocService {
       throw new Error("Lop hoc khong ton tai");
     }
 
-    if (actor?.role !== "admin" && actor?.id_giang_vien && lopHoc.id_giang_vien !== actor.id_giang_vien) {
+    if (
+      actor?.role !== "admin" &&
+      actor?.id_giang_vien &&
+      Number(lopHoc.id_giang_vien) !== Number(actor.id_giang_vien)
+    ) {
       throw new Error("Ban khong co quyen xem danh sach sinh vien cua lop hoc nay");
     }
 
@@ -144,7 +148,11 @@ class LopHocService {
       throw new Error("Lop hoc khong ton tai");
     }
 
-    if (actor?.role !== "admin" && actor?.id_giang_vien && lopHoc.id_giang_vien !== actor.id_giang_vien) {
+    if (
+      actor?.role !== "admin" &&
+      actor?.id_giang_vien &&
+      Number(lopHoc.id_giang_vien) !== Number(actor.id_giang_vien)
+    ) {
       throw new Error("Ban khong co quyen them sinh vien vao lop hoc nay");
     }
 
@@ -189,7 +197,11 @@ class LopHocService {
       throw new Error("Lop hoc khong ton tai");
     }
 
-    if (actor?.role !== "admin" && actor?.id_giang_vien && lopHoc.id_giang_vien !== actor.id_giang_vien) {
+    if (
+      actor?.role !== "admin" &&
+      actor?.id_giang_vien &&
+      Number(lopHoc.id_giang_vien) !== Number(actor.id_giang_vien)
+    ) {
       throw new Error("Ban khong co quyen them sinh vien vao lop hoc nay");
     }
 
