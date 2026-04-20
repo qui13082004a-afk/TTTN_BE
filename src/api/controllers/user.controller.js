@@ -4,12 +4,12 @@ exports.getProfile = async (req, res) => {
   try {
     const { email } = req.query;
     if (!email) {
-      return res.status(400).json({ message: "Email không được để trống" });
+      return res.status(400).json({ message: "Email khong duoc de trong" });
     }
 
     const profile = await userService.getProfileByEmail(email);
     if (!profile) {
-      return res.status(404).json({ message: "Không tìm thấy người dùng với email này" });
+      return res.status(404).json({ message: "Khong tim thay nguoi dung voi email nay" });
     }
 
     res.json({ profile });
@@ -24,14 +24,14 @@ exports.getProfileById = async (req, res) => {
     console.log("Controller received query:", { id });
 
     if (!id) {
-      return res.status(400).json({ message: "ID không được để trống" });
+      return res.status(400).json({ message: "ID khong duoc de trong" });
     }
 
     const profile = await userService.getProfileById(id);
     console.log("Service returned:", profile);
 
     if (!profile) {
-      return res.status(404).json({ message: "Không tìm thấy người dùng với ID này" });
+      return res.status(404).json({ message: "Khong tim thay nguoi dung voi ID nay" });
     }
 
     res.json({ profile });
@@ -47,14 +47,14 @@ exports.getStudentById = async (req, res) => {
     console.log("Controller getStudentById received id:", id);
 
     if (!id) {
-      return res.status(400).json({ message: "ID không được để trống" });
+      return res.status(400).json({ message: "ID khong duoc de trong" });
     }
 
     const student = await userService.getStudentById(id);
     console.log("Service returned student:", student);
 
     if (!student) {
-      return res.status(404).json({ message: "Không tìm thấy sinh viên với ID này" });
+      return res.status(404).json({ message: "Khong tim thay sinh vien voi ID nay" });
     }
 
     res.json({ student });
@@ -70,14 +70,14 @@ exports.getLecturerById = async (req, res) => {
     console.log("Controller getLecturerById received id:", id);
 
     if (!id) {
-      return res.status(400).json({ message: "ID không được để trống" });
+      return res.status(400).json({ message: "ID khong duoc de trong" });
     }
 
     const lecturer = await userService.getLecturerById(id);
     console.log("Service returned lecturer:", lecturer);
 
     if (!lecturer) {
-      return res.status(404).json({ message: "Không tìm thấy giảng viên với ID này" });
+      return res.status(404).json({ message: "Khong tim thay giang vien voi ID nay" });
     }
 
     res.json({ lecturer });
@@ -89,12 +89,23 @@ exports.getLecturerById = async (req, res) => {
 
 exports.getCurrentUser = async (req, res) => {
   try {
-    // Thông tin user đã được middleware authenticateToken gán vào req.user
     res.json({
-      user: req.user
+      user: req.user,
     });
   } catch (error) {
     console.error("Error in getCurrentUser:", error);
-    res.status(500).json({ message: "Lỗi server" });
+    res.status(500).json({ message: "Loi server" });
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  try {
+    const result = await userService.changePassword(req.user, req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(error.field ? 400 : 500).json({
+      message: error.message,
+      field: error.field || null,
+    });
   }
 };
