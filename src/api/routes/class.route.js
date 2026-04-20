@@ -25,6 +25,9 @@ router.get("/lecturer/:id_giang_vien", classController.getClassesByLecturer);
 router.post("/:id/students/manual", authenticateToken, authorizeLecturer, classController.addStudentToClassByEmail);
 router.post("/:id/students/import", authenticateToken, authorizeLecturer, upload.single("file"), classController.importStudentsToClass);
 router.get("/:id/students", authenticateToken, authorizeLecturer, classController.getStudentsByClassId);
+router.get("/:id/groups", authenticateToken, authorizeLecturer, classController.getGroupsByClassId);
+router.get("/:id/ungrouped-students", authenticateToken, authorizeLecturer, classController.getUngroupedStudentsByClassId);
+router.post("/:id/auto-group", authenticateToken, authorizeLecturer, classController.autoGroupStudents);
 
 // Get class by ID
 router.get("/:id", classController.getClassById);

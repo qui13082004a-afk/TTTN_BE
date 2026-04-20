@@ -1,6 +1,14 @@
 const lopHocRepo = require("../repositories/lopHoc.repository");
 const sinhVienRepo = require("../repositories/sinhVien.repository");
-const { GiangVien, LopHoc, SinhVien, SinhVienLopHoc } = require("../models");
+const {
+  GiangVien,
+  LopHoc,
+  SinhVien,
+  SinhVienLopHoc,
+  NhomHoc,
+  ThanhVienNhom,
+  sequelize,
+} = require("../models");
 const { Op } = require("sequelize");
 const XLSX = require("xlsx");
 
@@ -80,13 +88,7 @@ class LopHocService {
       throw new Error("Lop hoc khong ton tai");
     }
 
-    if (
-      actor?.role !== "admin" &&
-      actor?.id_giang_vien &&
-      Number(lopHoc.id_giang_vien) !== Number(actor.id_giang_vien)
-    ) {
-      throw new Error("Ban khong co quyen xem danh sach sinh vien cua lop hoc nay");
-    }
+    this.ensureLecturerOwnsClass(lopHoc, actor);
 
     return {
       class: {
@@ -99,6 +101,160 @@ class LopHocService {
       students: (lopHoc.sinh_viens || []).sort((a, b) =>
         String(a.ho_ten || "").localeCompare(String(b.ho_ten || ""), "vi")
       ),
+    };
+  }
+
+  async getGroupsByClassId(id_lop, actor) {
+    const lopHoc = await this.getOwnedClass(id_lop, actor);
+
+    const groups = await NhomHoc.findAll({
+      where: { id_lop: lopHoc.id_lop },
+      include: [
+        {
+          model: SinhVien,
+          attributes: ["id_sinh_vien", "mssv", "ho_ten", "email"],
+          through: {
+            attributes: ["vai_tro_noi_bo", "ngay_gia_nhap"],
+          },
+        },
+      ],
+      order: [["id_nhom", "ASC"]],
+    });
+
+    return {
+      class: {
+        id_lop: lopHoc.id_lop,
+        ma_lop: lopHoc.ma_lop,
+        ten_lop: lopHoc.ten_lop,
+      },
+      groups: groups.map((group) => ({
+        ...group.toJSON(),
+        sinh_viens: Array.isArray(group.sinh_viens)
+          ? [...group.sinh_viens].sort((a, b) =>
+            String(a.ho_ten || "").localeCompare(String(b.ho_ten || ""), "vi")
+          )
+          : [],
+        so_thanh_vien: Array.isArray(group.sinh_viens) ? group.sinh_viens.length : 0,
+      })),
+    };
+  }
+
+  async getUngroupedStudentsByClassId(id_lop, actor) {
+    const lopHoc = await this.getOwnedClass(id_lop, actor);
+    const students = await this.findUngroupedStudentsByClassId(lopHoc.id_lop);
+
+    return {
+      class: {
+        id_lop: lopHoc.id_lop,
+        ma_lop: lopHoc.ma_lop,
+        ten_lop: lopHoc.ten_lop,
+      },
+      count: students.length,
+      students,
+    };
+  }
+
+  async autoGroupStudents(id_lop, actor) {
+    const lopHoc = await this.getOwnedClass(id_lop, actor);
+    const now = new Date();
+
+    if (!lopHoc.han_chot_dang_ky || new Date(lopHoc.han_chot_dang_ky) > now) {
+      throw new Error("Lop hoc chua qua han dang ky nen khong the phan nhom tu dong");
+    }
+
+    if (lopHoc.trang_thai !== "dang_mo") {
+      throw new Error("Chi co the phan nhom tu dong voi lop dang mo");
+    }
+
+    const ungroupedStudents = await this.findUngroupedStudentsByClassId(lopHoc.id_lop);
+    if (ungroupedStudents.length === 0) {
+      throw new Error("Tat ca sinh vien trong lop da co nhom");
+    }
+
+    const result = await sequelize.transaction(async (transaction) => {
+      const groupedStudents = [];
+      let createdGroups = 0;
+
+      let groups = await this.loadGroupsWithCounts(lopHoc.id_lop, transaction);
+
+      for (const student of ungroupedStudents) {
+        let targetGroup = groups.find((group) => group.memberCount < group.so_luong_toi_da);
+
+        if (!targetGroup) {
+          const nextIndex = groups.length + 1;
+
+          const newGroup = await NhomHoc.create({
+            id_lop: lopHoc.id_lop,
+            ma_nhom: this.generateGroupCode(lopHoc, nextIndex),
+            ten_nhom: `Nhom ${nextIndex}`,
+            trang_thai: "tu_dong",
+            so_luong_toi_da: this.getGroupCapacity(lopHoc, groups),
+          }, { transaction });
+
+          targetGroup = {
+            id_nhom: newGroup.id_nhom,
+            ma_nhom: newGroup.ma_nhom,
+            ten_nhom: newGroup.ten_nhom,
+            so_luong_toi_da: newGroup.so_luong_toi_da || 5,
+            memberCount: 0,
+          };
+
+          groups.push(targetGroup);
+          groups.sort((a, b) => {
+            if (a.memberCount !== b.memberCount) return a.memberCount - b.memberCount;
+            return a.id_nhom - b.id_nhom;
+          });
+          createdGroups++;
+        }
+
+        await ThanhVienNhom.findOrCreate({
+          where: {
+            id_nhom: targetGroup.id_nhom,
+            id_sinh_vien: student.id_sinh_vien,
+          },
+          defaults: {
+            id_nhom: targetGroup.id_nhom,
+            id_sinh_vien: student.id_sinh_vien,
+            vai_tro_noi_bo: "thanh_vien",
+            ngay_gia_nhap: now,
+          },
+          transaction,
+        });
+
+        targetGroup.memberCount += 1;
+        groupedStudents.push({
+          id_sinh_vien: student.id_sinh_vien,
+          mssv: student.mssv,
+          ho_ten: student.ho_ten,
+          email: student.email,
+          id_nhom: targetGroup.id_nhom,
+          ten_nhom: targetGroup.ten_nhom,
+        });
+
+        groups.sort((a, b) => {
+          if (a.memberCount !== b.memberCount) return a.memberCount - b.memberCount;
+          return a.id_nhom - b.id_nhom;
+        });
+      }
+
+      await lopHoc.update({ trang_thai: "da_chot" }, { transaction });
+
+      return {
+        groupedStudents,
+        createdGroups,
+      };
+    });
+
+    return {
+      class: {
+        id_lop: lopHoc.id_lop,
+        ma_lop: lopHoc.ma_lop,
+        ten_lop: lopHoc.ten_lop,
+        trang_thai: "da_chot",
+      },
+      grouped_count: result.groupedStudents.length,
+      created_group_count: result.createdGroups,
+      grouped_students: result.groupedStudents,
     };
   }
 
@@ -180,13 +336,7 @@ class LopHocService {
       throw new Error("Lop hoc khong ton tai");
     }
 
-    if (
-      actor?.role !== "admin" &&
-      actor?.id_giang_vien &&
-      Number(lopHoc.id_giang_vien) !== Number(actor.id_giang_vien)
-    ) {
-      throw new Error("Ban khong co quyen them sinh vien vao lop hoc nay");
-    }
+    this.ensureLecturerOwnsClass(lopHoc, actor);
 
     const student = await sinhVienRepo.findByEmail(normalizedEmail);
     if (!student) {
@@ -231,13 +381,7 @@ class LopHocService {
       throw new Error("Lop hoc khong ton tai");
     }
 
-    if (
-      actor?.role !== "admin" &&
-      actor?.id_giang_vien &&
-      Number(lopHoc.id_giang_vien) !== Number(actor.id_giang_vien)
-    ) {
-      throw new Error("Ban khong co quyen them sinh vien vao lop hoc nay");
-    }
+    this.ensureLecturerOwnsClass(lopHoc, actor);
 
     const workbook = XLSX.readFile(filePath, { raw: false });
     const sheetName = workbook.SheetNames[0];
@@ -295,6 +439,111 @@ class LopHocService {
         ten_lop: lopHoc.ten_lop,
       },
     };
+  }
+
+  async getOwnedClass(id_lop, actor) {
+    const lopHoc = await LopHoc.findByPk(id_lop);
+    if (!lopHoc) {
+      throw new Error("Lop hoc khong ton tai");
+    }
+
+    this.ensureLecturerOwnsClass(lopHoc, actor);
+    return lopHoc;
+  }
+
+  ensureLecturerOwnsClass(lopHoc, actor) {
+    if (
+      actor?.role !== "admin" &&
+      actor?.id_giang_vien &&
+      Number(lopHoc.id_giang_vien) !== Number(actor.id_giang_vien)
+    ) {
+      throw new Error("Ban khong co quyen thao tac voi lop hoc nay");
+    }
+  }
+
+  async findUngroupedStudentsByClassId(id_lop) {
+    const enrolledStudents = await SinhVien.findAll({
+      attributes: ["id_sinh_vien", "mssv", "ho_ten", "email", "trang_thai"],
+      include: [
+        {
+          model: LopHoc,
+          where: { id_lop },
+          attributes: [],
+          through: {
+            where: { trang_thai: "dang_hoc" },
+            attributes: [],
+          },
+        },
+      ],
+      order: [["ho_ten", "ASC"]],
+    });
+
+    if (enrolledStudents.length === 0) {
+      return [];
+    }
+
+    const groups = await NhomHoc.findAll({
+      where: { id_lop },
+      attributes: ["id_nhom"],
+    });
+
+    if (groups.length === 0) {
+      return enrolledStudents.map((student) => student.toJSON());
+    }
+
+    const memberRows = await ThanhVienNhom.findAll({
+      where: {
+        id_nhom: groups.map((group) => group.id_nhom),
+      },
+      attributes: ["id_sinh_vien"],
+    });
+
+    const groupedStudentIds = new Set(memberRows.map((member) => Number(member.id_sinh_vien)));
+
+    return enrolledStudents
+      .filter((student) => !groupedStudentIds.has(Number(student.id_sinh_vien)))
+      .map((student) => student.toJSON());
+  }
+
+  async loadGroupsWithCounts(id_lop, transaction) {
+    const groups = await NhomHoc.findAll({
+      where: { id_lop },
+      include: [
+        {
+          model: SinhVien,
+          attributes: ["id_sinh_vien"],
+          through: { attributes: [] },
+          required: false,
+        },
+      ],
+      order: [["id_nhom", "ASC"]],
+      transaction,
+    });
+
+    return groups.map((group) => ({
+      id_nhom: group.id_nhom,
+      ma_nhom: group.ma_nhom,
+      ten_nhom: group.ten_nhom,
+      so_luong_toi_da: Number(group.so_luong_toi_da || 5),
+      memberCount: Array.isArray(group.sinh_viens) ? group.sinh_viens.length : 0,
+    })).sort((a, b) => {
+      if (a.memberCount !== b.memberCount) return a.memberCount - b.memberCount;
+      return a.id_nhom - b.id_nhom;
+    });
+  }
+
+  getGroupCapacity(lopHoc, groups) {
+    const existingCapacity = groups.find((group) => Number(group.so_luong_toi_da || 0) > 0);
+    if (existingCapacity) {
+      return Number(existingCapacity.so_luong_toi_da);
+    }
+
+    return Number(lopHoc.si_so_toi_da || 5);
+  }
+
+  generateGroupCode(lopHoc, nextIndex) {
+    const suffix = String(nextIndex).padStart(2, "0");
+    return lopHoc.ma_lop ? `${lopHoc.ma_lop}-N${suffix}` : `LOP${lopHoc.id_lop}-N${suffix}`;
   }
 
   extractEmailFromRow(row) {
