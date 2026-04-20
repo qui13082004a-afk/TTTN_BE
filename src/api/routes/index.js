@@ -8,6 +8,7 @@ const classRoute = require("./class.route");
 const moveRoute = require("./move.route");
 const kickRoute = require("./kick_student.route");
 const dashboardRoute = require("./dashboard.route");
+const calendarRoute = require("./calendar.route");
 
 // Nhóm API xác thực và tài khoản
 router.use("/auth", authRoute);
@@ -29,5 +30,8 @@ router.use("/kick", kickRoute);
 
 // Nhóm API dữ liệu bảng điều khiển giảng viên
 router.use("/dashboard", dashboardRoute);
+
+// Nhóm API lịch làm việc và sự kiện theo ngày/tháng
+router.use("/calendar", calendarRoute);
 
 module.exports = router;

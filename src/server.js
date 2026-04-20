@@ -2,8 +2,41 @@ const { sequelize } = require("./config/database");
 const express = require("express");
 const app = express();
 const { SinhVienLopHoc } = require("./api/models");
+require("dotenv").config();
 
 const importRoute = require("./api/routes/index");
+
+const allowedOrigins = (process.env.CORS_ORIGIN || "*")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use((req, res, next) => {
+  const requestOrigin = req.headers.origin;
+  const allowAllOrigins = allowedOrigins.includes("*");
+
+  if (allowAllOrigins) {
+    res.header("Access-Control-Allow-Origin", "*");
+  } else if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+    res.header("Access-Control-Allow-Origin", requestOrigin);
+    res.header("Vary", "Origin");
+  }
+
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+  );
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin,X-Requested-With,Content-Type,Accept,Authorization"
+  );
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
