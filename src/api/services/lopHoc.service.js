@@ -1,3 +1,5 @@
+const { Op } = require("sequelize");
+const XLSX = require("xlsx");
 const lopHocRepo = require("../repositories/lopHoc.repository");
 const sinhVienRepo = require("../repositories/sinhVien.repository");
 const {
@@ -7,10 +9,10 @@ const {
   SinhVienLopHoc,
   NhomHoc,
   ThanhVienNhom,
+  CongViec,
+  TinNhan,
   sequelize,
 } = require("../models");
-const { Op } = require("sequelize");
-const XLSX = require("xlsx");
 
 class LopHocService {
   async createClass(data) {
@@ -64,7 +66,7 @@ class LopHocService {
       throw new Error("Lop hoc khong ton tai");
     }
 
-    return lopHoc;
+    return await this.buildClassCardData(lopHoc);
   }
 
   async getStudentsByClassId(id_lop, actor) {
@@ -77,14 +79,12 @@ class LopHocService {
         {
           model: SinhVien,
           attributes: ["id_sinh_vien", "mssv", "ho_ten", "email", "trang_thai"],
-          through: {
-            attributes: [],
-          },
+          through: { attributes: [] },
         },
       ],
     });
 
-    if (!lopHoc) {
+    if (!lopHoc || lopHoc.is_deleted) {
       throw new Error("Lop hoc khong ton tai");
     }
 
@@ -174,7 +174,6 @@ class LopHocService {
     const result = await sequelize.transaction(async (transaction) => {
       const groupedStudents = [];
       let createdGroups = 0;
-
       let groups = await this.loadGroupsWithCounts(lopHoc.id_lop, transaction);
 
       for (const student of ungroupedStudents) {
@@ -182,7 +181,6 @@ class LopHocService {
 
         if (!targetGroup) {
           const nextIndex = groups.length + 1;
-
           const newGroup = await NhomHoc.create({
             id_lop: lopHoc.id_lop,
             ma_nhom: this.generateGroupCode(lopHoc, nextIndex),
@@ -239,10 +237,7 @@ class LopHocService {
 
       await lopHoc.update({ trang_thai: "da_chot" }, { transaction });
 
-      return {
-        groupedStudents,
-        createdGroups,
-      };
+      return { groupedStudents, createdGroups };
     });
 
     return {
@@ -259,11 +254,13 @@ class LopHocService {
   }
 
   async getClassesByLecturer(id_giang_vien) {
-    return await lopHocRepo.findByLecturerId(id_giang_vien);
+    const classes = await lopHocRepo.findByLecturerId(id_giang_vien);
+    return await Promise.all(classes.map((lopHoc) => this.buildClassCardData(lopHoc)));
   }
 
   async getAllClasses() {
-    return await lopHocRepo.findAll();
+    const classes = await lopHocRepo.findAll();
+    return await Promise.all(classes.map((lopHoc) => this.buildClassCardData(lopHoc)));
   }
 
   async updateClass(id, data) {
@@ -282,7 +279,52 @@ class LopHocService {
     return updated;
   }
 
-  async deleteClass(id) {
+  async getDeleteCheck(id, actor) {
+    const lopHoc = await this.getOwnedClass(id, actor);
+    const stats = await this.getClassActivityStats(lopHoc.id_lop);
+    const canHardDelete = stats.student_count === 0
+      && stats.group_count === 0
+      && stats.task_count === 0
+      && stats.message_count === 0;
+
+    return {
+      class: {
+        id_lop: lopHoc.id_lop,
+        ma_lop: lopHoc.ma_lop,
+        ten_lop: lopHoc.ten_lop,
+      },
+      can_hard_delete: canHardDelete,
+      can_soft_delete: !canHardDelete,
+      action_if_confirmed: canHardDelete ? "hard_delete" : "soft_delete",
+      reason: canHardDelete
+        ? "Lop chua co sinh vien va du lieu hoat dong, co the xoa vinh vien"
+        : "Khong the xoa vinh vien lop da co du lieu hoat dong, chi nen an lop",
+      stats,
+    };
+  }
+
+  async hideClass(id, actor) {
+    const lopHoc = await this.getOwnedClass(id, actor);
+    const updated = await lopHoc.update({
+      is_deleted: true,
+      trang_thai: "da_an",
+    });
+
+    return {
+      id_lop: updated.id_lop,
+      ma_lop: updated.ma_lop,
+      ten_lop: updated.ten_lop,
+      is_deleted: updated.is_deleted,
+      trang_thai: updated.trang_thai,
+    };
+  }
+
+  async deleteClass(id, actor) {
+    const check = await this.getDeleteCheck(id, actor);
+    if (!check.can_hard_delete) {
+      throw new Error("Khong the xoa lop da co du lieu hoat dong");
+    }
+
     const deleted = await lopHocRepo.delete(id);
     if (!deleted) {
       throw new Error("Xoa lop hoc that bai");
@@ -291,12 +333,13 @@ class LopHocService {
     return deleted;
   }
 
-  async searchByClassName(ten_lop) {
-    if (!ten_lop || ten_lop.trim() === "") {
-      throw new Error("Ten lop khong duoc de trong");
+  async searchClasses(keyword) {
+    if (!keyword || keyword.trim() === "") {
+      throw new Error("Tu khoa tim kiem khong duoc de trong");
     }
 
-    return await lopHocRepo.findByClassName(ten_lop.trim());
+    const classes = await lopHocRepo.findByKeyword(keyword.trim());
+    return await Promise.all(classes.map((lopHoc) => this.buildClassCardData(lopHoc)));
   }
 
   async searchByLecturerName(ten_giang_vien) {
@@ -318,7 +361,8 @@ class LopHocService {
 
     const lecturerIds = lecturers.map((lecturer) => lecturer.id_giang_vien);
     const classes = await lopHocRepo.findAll();
-    return classes.filter((lopHoc) => lecturerIds.includes(lopHoc.id_giang_vien));
+    const filtered = classes.filter((lopHoc) => lecturerIds.includes(lopHoc.id_giang_vien));
+    return await Promise.all(filtered.map((lopHoc) => this.buildClassCardData(lopHoc)));
   }
 
   async addStudentToClassByEmail({ id_lop, email, actor }) {
@@ -332,7 +376,7 @@ class LopHocService {
     }
 
     const lopHoc = await LopHoc.findByPk(id_lop);
-    if (!lopHoc) {
+    if (!lopHoc || lopHoc.is_deleted) {
       throw new Error("Lop hoc khong ton tai");
     }
 
@@ -377,7 +421,7 @@ class LopHocService {
     }
 
     const lopHoc = await LopHoc.findByPk(id_lop);
-    if (!lopHoc) {
+    if (!lopHoc || lopHoc.is_deleted) {
       throw new Error("Lop hoc khong ton tai");
     }
 
@@ -443,7 +487,7 @@ class LopHocService {
 
   async getOwnedClass(id_lop, actor) {
     const lopHoc = await LopHoc.findByPk(id_lop);
-    if (!lopHoc) {
+    if (!lopHoc || lopHoc.is_deleted) {
       throw new Error("Lop hoc khong ton tai");
     }
 
@@ -563,6 +607,77 @@ class LopHocService {
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]/g, "");
+  }
+
+  async buildClassCardData(lopHoc) {
+    const stats = await this.getClassActivityStats(lopHoc.id_lop);
+    const displayStatus = this.getDisplayStatus(lopHoc);
+
+    return {
+      ...lopHoc.toJSON(),
+      ma_mon_hoc: lopHoc.id_mon_hoc ? String(lopHoc.id_mon_hoc) : null,
+      ten_mon_hoc: lopHoc.mo_ta || null,
+      so_sinh_vien: stats.student_count,
+      so_nhom: stats.group_count,
+      trang_thai_hien_thi: displayStatus.code,
+      nhan_trang_thai: displayStatus.label,
+    };
+  }
+
+  getDisplayStatus(lopHoc) {
+    const now = new Date();
+    const isExpired = lopHoc.han_chot_dang_ky && new Date(lopHoc.han_chot_dang_ky) < now;
+
+    if (
+      lopHoc.trang_thai === "het_han" ||
+      lopHoc.trang_thai === "da_chot" ||
+      lopHoc.trang_thai === "da_an" ||
+      isExpired
+    ) {
+      return {
+        code: "het_han",
+        label: "Het han",
+      };
+    }
+
+    return {
+      code: "dang_mo",
+      label: "Dang mo",
+    };
+  }
+
+  async getClassActivityStats(id_lop) {
+    const studentCount = await SinhVienLopHoc.count({
+      where: { id_lop },
+    });
+
+    const groups = await NhomHoc.findAll({
+      where: { id_lop },
+      attributes: ["id_nhom"],
+    });
+
+    const groupIds = groups.map((group) => group.id_nhom);
+    const groupCount = groupIds.length;
+
+    let taskCount = 0;
+    let messageCount = 0;
+
+    if (groupIds.length > 0) {
+      taskCount = await CongViec.count({
+        where: { id_nhom: groupIds },
+      });
+
+      messageCount = await TinNhan.count({
+        where: { id_nhom: groupIds },
+      });
+    }
+
+    return {
+      student_count: studentCount,
+      group_count: groupCount,
+      task_count: taskCount,
+      message_count: messageCount,
+    };
   }
 }
 
