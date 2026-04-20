@@ -4,50 +4,51 @@ const sinhVienRepo = require("../repositories/sinhVien.repository");
 
 class ImportService {
   async importSinhVienFromExcel(filePath) {
-    // 1. Đọc file Excel
     const workbook = XLSX.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
     const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-    if (data.length === 0) throw new Error("File rỗng");
+    if (data.length === 0) {
+      throw new Error("File rong");
+    }
 
     let inserted = 0;
     const warnings = [];
     const defaultPassword = await bcrypt.hash("123456", 10);
 
     for (const [index, row] of data.entries()) {
-      // 2. Lấy dữ liệu theo đúng tên cột trong ảnh Excel của bạn
-      // Lưu ý: Tên key phải viết y hệt tên cột ở dòng đầu tiên của file Excel
-      const hoLot = (row["Họ lót"] || "").toString().trim();
-      const ten = (row["Tên"] || "").toString().trim();
-      const email = (row["Email"] || "").toString().trim();
-      const maSV = row["Mã sinh viên"];
+      const hoLot = (row["Ho lot"] || row["Họ lót"] || "").toString().trim();
+      const ten = (row["Ten"] || row["Tên"] || "").toString().trim();
+      const email = (row["Email"] || "").toString().trim().toLowerCase();
+      const maSV = (row["Mã sinh viên"] || row["Ma sinh vien"] || row.MSSV || "").toString().trim();
 
-      // 3. Kiểm tra dữ liệu bắt buộc
       if (!ten) {
-        throw new Error(`Dòng ${index + 2} bị thiếu Tên`);
+        throw new Error(`Dong ${index + 2} bi thieu Ten`);
       }
+
       if (!email) {
-        warnings.push(`Dòng ${index + 2} có tên nhưng thiếu Email`);
+        warnings.push(`Dong ${index + 2} co ten nhung thieu Email`);
         continue;
       }
 
       const exist = await sinhVienRepo.findByEmail(email);
       if (exist) {
-        warnings.push(`Dòng ${index + 2} đã có tài khoản trong hệ thống`);
+        warnings.push(`Dong ${index + 2} da co tai khoan trong he thong`);
         continue;
       }
 
       const hoTenDayDu = `${hoLot} ${ten}`.trim();
 
       await sinhVienRepo.create({
+        mssv: maSV || null,
         ho_ten: hoTenDayDu,
-        email: email,
+        email,
         mat_khau: defaultPassword,
       });
-      
+
       inserted++;
     }
+
     return { inserted, warnings };
   }
 }

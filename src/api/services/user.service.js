@@ -1,18 +1,36 @@
 const { SinhVien, GiangVien } = require("../models");
 
 class UserService {
-  async getStudentById(id) {
-    console.log("getStudentById called with id:", id);
+  getLecturerRole(lecturer) {
+    const adminEmails = String(process.env.ADMIN_EMAILS || "admin@example.com")
+      .split(",")
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean);
 
+    return adminEmails.includes(String(lecturer?.email || "").toLowerCase())
+      ? "admin"
+      : "giangvien";
+  }
+
+  async getStudentById(id) {
     if (!id) {
-      console.log("Missing id");
       return null;
     }
 
     const student = await SinhVien.findByPk(id, {
-      attributes: ["id_sinh_vien", "ho_ten", "email"],
+      attributes: [
+        "id_sinh_vien",
+        "mssv",
+        "ho_ten",
+        "email",
+        "sdt",
+        "avatar",
+        "khoa",
+        "ngay_sinh",
+        "gioi_tinh",
+        "trang_thai",
+      ],
     });
-    console.log("SinhVien result:", student);
 
     if (student) {
       return { ...student.toJSON(), role: "sinhvien" };
@@ -22,20 +40,30 @@ class UserService {
   }
 
   async getLecturerById(id) {
-    console.log("getLecturerById called with id:", id);
-
     if (!id) {
-      console.log("Missing id");
       return null;
     }
 
     const lecturer = await GiangVien.findByPk(id, {
-      attributes: ["id_giang_vien", "ho_ten", "email", "role"],
+      attributes: [
+        "id_giang_vien",
+        "ma_giang_vien",
+        "ho_ten",
+        "email",
+        "sdt",
+        "avatar_url",
+        "khoa",
+        "hoc_ham",
+        "hoc_vi",
+        "trang_thai",
+      ],
     });
-    console.log("GiangVien result:", lecturer);
 
     if (lecturer) {
-      return lecturer.toJSON();
+      return {
+        ...lecturer.toJSON(),
+        role: this.getLecturerRole(lecturer),
+      };
     }
 
     return null;
@@ -52,6 +80,31 @@ class UserService {
     }
 
     return await this.getStudentById(id);
+  }
+
+  async getProfileByEmail(email) {
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    if (!normalizedEmail) {
+      return null;
+    }
+
+    const lecturer = await GiangVien.findOne({ where: { email: normalizedEmail } });
+    if (lecturer) {
+      return {
+        ...lecturer.toJSON(),
+        role: this.getLecturerRole(lecturer),
+      };
+    }
+
+    const student = await SinhVien.findOne({ where: { email: normalizedEmail } });
+    if (student) {
+      return {
+        ...student.toJSON(),
+        role: "sinhvien",
+      };
+    }
+
+    return null;
   }
 }
 

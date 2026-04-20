@@ -1,4 +1,4 @@
-const { SinhVien, NhomHoc, CongViec, NhatKy, sequelize } = require("../models");
+const { SinhVien, NhomHoc, CongViec, NhatKy, ThanhVienNhom, sequelize } = require("../models");
 
 class AdminService {
   async moveStudent({ id_sinh_vien, id_nhom_from, id_nhom_to }) {
@@ -7,11 +7,11 @@ class AdminService {
     const toGroupId = Number(id_nhom_to);
 
     if (!studentId || !fromGroupId || !toGroupId) {
-      throw new Error("id_sinh_vien, id_nhom_from và id_nhom_to là bắt buộc và phải là số.");
+      throw new Error("id_sinh_vien, id_nhom_from va id_nhom_to la bat buoc va phai la so.");
     }
 
     if (fromGroupId === toGroupId) {
-      throw new Error("Nhóm nguồn và nhóm đích phải khác nhau.");
+      throw new Error("Nhom nguon va nhom dich phai khac nhau.");
     }
 
     const [student, fromGroup, toGroup] = await Promise.all([
@@ -21,43 +21,79 @@ class AdminService {
     ]);
 
     if (!student) {
-      throw new Error("Sinh viên không tồn tại.");
+      throw new Error("Sinh vien khong ton tai.");
     }
 
     if (!fromGroup) {
-      throw new Error("Nhóm nguồn không tồn tại.");
+      throw new Error("Nhom nguon khong ton tai.");
     }
 
     if (!toGroup) {
-      throw new Error("Nhóm đích không tồn tại.");
+      throw new Error("Nhom dich khong ton tai.");
     }
 
     if (fromGroup.id_lop !== toGroup.id_lop) {
-      throw new Error("Hai nhóm phải thuộc cùng một lớp học.");
+      throw new Error("Hai nhom phai thuoc cung mot lop hoc.");
     }
 
-    const [updatedCount] = await sequelize.transaction(async (transaction) => {
-      return await CongViec.update(
+    const result = await sequelize.transaction(async (transaction) => {
+      const membership = await ThanhVienNhom.findOne({
+        where: {
+          id_sinh_vien: studentId,
+          id_nhom: fromGroupId,
+        },
+        transaction,
+      });
+
+      if (!membership) {
+        return { movedCount: 0, membershipMoved: false };
+      }
+
+      await ThanhVienNhom.findOrCreate({
+        where: {
+          id_sinh_vien: studentId,
+          id_nhom: toGroupId,
+        },
+        defaults: {
+          id_sinh_vien: studentId,
+          id_nhom: toGroupId,
+          vai_tro_noi_bo: membership.vai_tro_noi_bo,
+          ngay_gia_nhap: new Date(),
+        },
+        transaction,
+      });
+
+      await ThanhVienNhom.destroy({
+        where: {
+          id_sinh_vien: studentId,
+          id_nhom: fromGroupId,
+        },
+        transaction,
+      });
+
+      const [movedCount] = await CongViec.update(
         { id_nhom: toGroupId },
         {
           where: {
-            id_sinh_vien: studentId,
+            id_sinh_vien_phu_trach: studentId,
             id_nhom: fromGroupId,
           },
           transaction,
         }
       );
+
+      return { movedCount, membershipMoved: true };
     });
 
-    if (updatedCount === 0) {
-      throw new Error("Không tìm thấy công việc của sinh viên trong nhóm nguồn để di chuyển.");
+    if (!result.membershipMoved) {
+      throw new Error("Khong tim thay sinh vien trong nhom nguon de di chuyen.");
     }
 
     return {
       id_sinh_vien: studentId,
       id_nhom_from: fromGroupId,
       id_nhom_to: toGroupId,
-      moved_count: updatedCount,
+      moved_count: result.movedCount,
     };
   }
 
@@ -66,7 +102,7 @@ class AdminService {
     const groupId = Number(id_nhom);
 
     if (!studentId || !groupId) {
-      throw new Error("id_sinh_vien và id_nhom là bắt buộc và phải là số.");
+      throw new Error("id_sinh_vien va id_nhom la bat buoc va phai la so.");
     }
 
     const [student, group] = await Promise.all([
@@ -75,15 +111,23 @@ class AdminService {
     ]);
 
     if (!student) {
-      throw new Error("Sinh viên không tồn tại.");
+      throw new Error("Sinh vien khong ton tai.");
     }
 
     if (!group) {
-      throw new Error("Nhóm không tồn tại.");
+      throw new Error("Nhom khong ton tai.");
     }
 
     const result = await sequelize.transaction(async (transaction) => {
       const tasks = await CongViec.findAll({
+        where: {
+          id_sinh_vien_phu_trach: studentId,
+          id_nhom: groupId,
+        },
+        transaction,
+      });
+
+      const removedMembership = await ThanhVienNhom.destroy({
         where: {
           id_sinh_vien: studentId,
           id_nhom: groupId,
@@ -91,35 +135,33 @@ class AdminService {
         transaction,
       });
 
-      if (tasks.length === 0) {
-        return { updatedCount: 0, deletedLogs: 0 };
+      let deletedLogs = 0;
+      if (tasks.length > 0) {
+        const taskIds = tasks.map((task) => task.id_cong_viec);
+        deletedLogs = await NhatKy.destroy({
+          where: {
+            id_cong_viec: taskIds,
+          },
+          transaction,
+        });
       }
-
-      const taskIds = tasks.map((task) => task.id_cong_viec);
-
-      const deletedLogs = await NhatKy.destroy({
-        where: {
-          id_cong_viec: taskIds,
-        },
-        transaction,
-      });
 
       const [updatedCount] = await CongViec.update(
         { id_nhom: null },
         {
           where: {
-            id_sinh_vien: studentId,
+            id_sinh_vien_phu_trach: studentId,
             id_nhom: groupId,
           },
           transaction,
         }
       );
 
-      return { updatedCount, deletedLogs };
+      return { updatedCount, deletedLogs, removedMembership };
     });
 
-    if (result.updatedCount === 0) {
-      throw new Error("Không tìm thấy sinh viên trong nhóm để xóa.");
+    if (!result.removedMembership && result.updatedCount === 0) {
+      throw new Error("Khong tim thay sinh vien trong nhom de xoa.");
     }
 
     return {

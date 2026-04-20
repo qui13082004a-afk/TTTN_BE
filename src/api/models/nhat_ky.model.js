@@ -11,7 +11,6 @@ const NhatKy = sequelize.define("nhat_ky_tien_do", {
   id_cong_viec: { type: DataTypes.INTEGER },
   tien_do_moi: { type: DataTypes.INTEGER },
   ghi_chu: { type: DataTypes.TEXT },
-  trang_thai: { type: DataTypes.STRING(50) },
 }, { tableName: "nhat_ky_tien_do", timestamps: false });
 
 module.exports = NhatKy;
