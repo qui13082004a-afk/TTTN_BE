@@ -13,43 +13,51 @@ class ImportService {
     }
 
     let inserted = 0;
+    let skipped = 0;
     const warnings = [];
     const defaultPassword = await bcrypt.hash("123456", 10);
 
     for (const [index, row] of data.entries()) {
+      const lineNumber = index + 2;
       const hoLot = (row["Ho lot"] || row["Họ lót"] || "").toString().trim();
       const ten = (row["Ten"] || row["Tên"] || "").toString().trim();
       const email = (row["Email"] || "").toString().trim().toLowerCase();
       const maSV = (row["Mã sinh viên"] || row["Ma sinh vien"] || row.MSSV || "").toString().trim();
 
       if (!ten) {
-        throw new Error(`Dong ${index + 2} bi thieu Ten`);
+        throw new Error(`Dong ${lineNumber} bi thieu Ten`);
       }
 
-      if (!email) {
-        warnings.push(`Dong ${index + 2} co ten nhung thieu Email`);
+      if (!email && !maSV) {
+        warnings.push(`Dong ${lineNumber} thieu ca Email va MSSV nen khong the tao tai khoan`);
         continue;
       }
 
-      const exist = await sinhVienRepo.findByEmail(email);
-      if (exist) {
-        warnings.push(`Dong ${index + 2} da co tai khoan trong he thong`);
+      const existedAccount = await sinhVienRepo.findExistingAccount({
+        email: email || null,
+        mssv: maSV || null,
+      });
+
+      if (existedAccount) {
+        skipped++;
+        warnings.push(`Dong ${lineNumber} da co tai khoan trong he thong`);
         continue;
       }
 
       const hoTenDayDu = `${hoLot} ${ten}`.trim();
+      const generatedEmail = email || `${maSV}@student.stu.edu.vn`.toLowerCase();
 
       await sinhVienRepo.create({
         mssv: maSV || null,
         ho_ten: hoTenDayDu,
-        email,
+        email: generatedEmail,
         mat_khau: defaultPassword,
       });
 
       inserted++;
     }
 
-    return { inserted, warnings };
+    return { inserted, skipped, warnings };
   }
 }
 
