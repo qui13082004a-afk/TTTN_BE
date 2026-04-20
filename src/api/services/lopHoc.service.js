@@ -38,8 +38,50 @@ class LopHocService {
       throw new Error("ID giang vien khong duoc de trong");
     }
 
-    if (!ten_lop) {
+    const normalizedClassName = String(ten_lop || "").trim();
+    const normalizedSemester = String(hoc_ky || "").trim();
+    const normalizedClassCode = String(ma_lop || "").trim();
+    const classSize = Number(si_so_toi_da);
+    const groupCount = Number(so_nhom_toi_da);
+    const registrationDeadline = han_chot_dang_ky || han_chot_dang_ky_nhom;
+
+    if (!normalizedClassName) {
       throw new Error("Ten lop khong duoc de trong");
+    }
+
+    if (normalizedClassName.length < 5 || normalizedClassName.length > 100) {
+      throw new Error("Ten lop phai tu 5 den 100 ky tu");
+    }
+
+    if (!normalizedSemester) {
+      throw new Error("Hoc ky khong duoc de trong");
+    }
+
+    if (!Number.isInteger(classSize) || classSize <= 0) {
+      throw new Error("So sinh vien phai la so nguyen lon hon 0");
+    }
+
+    if (!Number.isInteger(groupCount) || groupCount <= 0) {
+      throw new Error("So nhom phai la so nguyen lon hon 0");
+    }
+
+    if (groupCount > classSize) {
+      throw new Error("So nhom khong duoc lon hon so sinh vien");
+    }
+
+    if (!registrationDeadline) {
+      throw new Error("Han dang ky khong duoc de trong");
+    }
+
+    const parsedDeadline = new Date(registrationDeadline);
+    if (Number.isNaN(parsedDeadline.getTime())) {
+      throw new Error("Han dang ky khong hop le");
+    }
+
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (parsedDeadline < startOfToday) {
+      throw new Error("Han dang ky phai lon hon hoac bang ngay hien tai");
     }
 
     const lecturer = await GiangVien.findByPk(lecturerId);
@@ -47,16 +89,30 @@ class LopHocService {
       throw new Error(`Giang vien co ID ${lecturerId} khong ton tai`);
     }
 
+    const duplicatedClass = await LopHoc.findOne({
+      where: {
+        id_giang_vien: lecturerId,
+        hoc_ky: normalizedSemester,
+        ten_lop: normalizedClassName,
+        is_deleted: false,
+      },
+    });
+
+    if (duplicatedClass) {
+      throw new Error("Lop hoc nay da ton tai trong hoc ky");
+    }
+
     return await lopHocRepo.create({
       id_giang_vien: lecturerId,
-      ma_lop: ma_lop?.trim() || null,
+      ma_lop: normalizedClassCode || null,
       id_mon_hoc: id_mon_hoc || null,
-      hoc_ky: hoc_ky?.trim() || null,
-      ten_lop: ten_lop.trim(),
-      si_so_toi_da: si_so_toi_da || null,
-      so_nhom_toi_da: so_nhom_toi_da || 1,
+      hoc_ky: normalizedSemester,
+      ten_lop: normalizedClassName,
+      si_so_toi_da: classSize,
+      so_nhom_toi_da: groupCount,
       mo_ta: mo_ta?.trim() || null,
-      han_chot_dang_ky: han_chot_dang_ky || han_chot_dang_ky_nhom || null,
+      han_chot_dang_ky: parsedDeadline,
+      trang_thai: "dang_mo",
     });
   }
 
