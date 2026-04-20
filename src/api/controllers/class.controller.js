@@ -196,7 +196,7 @@ exports.searchByLecturerName = async (req, res) => {
 exports.getStudentsByClassId = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await lopHocService.getStudentsByClassId(Number(id), req.user);
+    const result = await lopHocService.getStudentsByClassId(Number(id), req.user, req.query.q);
 
     res.json({
       class: result.class,
@@ -214,6 +214,60 @@ exports.getGroupsByClassId = async (req, res) => {
     const result = await lopHocService.getGroupsByClassId(Number(id), req.user);
 
     res.json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.getGroupManagementSummary = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await lopHocService.getGroupManagementSummary(Number(id), req.user);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.getAvailableGroupsByClassId = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await lopHocService.getAvailableGroupsByClassId(Number(id), req.user);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.createGroupForClass = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await lopHocService.createGroupForClass(Number(id), req.user, req.body);
+
+    res.status(201).json({
+      message: "Tao nhom moi thanh cong",
+      group: result,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.assignStudentToGroup = async (req, res) => {
+  try {
+    const { id, groupId } = req.params;
+    const { id_sinh_vien } = req.body;
+    const result = await lopHocService.assignStudentToGroup({
+      id_lop: Number(id),
+      id_nhom: Number(groupId),
+      id_sinh_vien: Number(id_sinh_vien),
+      actor: req.user,
+    });
+
+    res.json({
+      message: "Them sinh vien vao nhom thanh cong",
+      ...result,
+    });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
