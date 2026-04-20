@@ -1,3 +1,4 @@
+const bcrypt = require("bcrypt");
 const { SinhVien, GiangVien } = require("../models");
 
 class UserService {
@@ -29,6 +30,7 @@ class UserService {
         "ngay_sinh",
         "gioi_tinh",
         "trang_thai",
+        "updated_at",
       ],
     });
 
@@ -56,6 +58,7 @@ class UserService {
         "hoc_ham",
         "hoc_vi",
         "trang_thai",
+        "updated_at",
       ],
     });
 
@@ -105,6 +108,83 @@ class UserService {
     }
 
     return null;
+  }
+
+  async changePassword(actor, { current_password, new_password, confirm_password }) {
+    const actorId = actor?.role === "sinhvien" ? actor?.id_sinh_vien : actor?.id_giang_vien;
+
+    if (!actor || !actorId || !actor.role) {
+      throw new Error("Khong xac dinh duoc nguoi dung dang dang nhap");
+    }
+
+    const currentPassword = String(current_password || "");
+    const newPassword = String(new_password || "");
+    const confirmPassword = String(confirm_password || "");
+
+    if (!currentPassword) {
+      const error = new Error("Mật khẩu hiện tại không được để trống");
+      error.field = "current_password";
+      throw error;
+    }
+
+    if (!newPassword) {
+      const error = new Error("Mật khẩu mới không được để trống");
+      error.field = "new_password";
+      throw error;
+    }
+
+    if (!confirmPassword) {
+      const error = new Error("Nhập lại mật khẩu không được để trống");
+      error.field = "confirm_password";
+      throw error;
+    }
+
+    const model = actor.role === "sinhvien" ? SinhVien : GiangVien;
+    const primaryKey = actor.role === "sinhvien" ? "id_sinh_vien" : "id_giang_vien";
+    const user = await model.findByPk(actorId, {
+      attributes: [primaryKey, "mat_khau", "updated_at"],
+    });
+
+    if (!user) {
+      throw new Error("Khong tim thay tai khoan");
+    }
+
+    const isCurrentPasswordMatch = await bcrypt.compare(currentPassword, user.mat_khau);
+    if (!isCurrentPasswordMatch) {
+      const error = new Error("Mật khẩu hiện tại không chính xác");
+      error.field = "current_password";
+      throw error;
+    }
+
+    if (newPassword.length < 6) {
+      const error = new Error("Mật khẩu mới phải có ít nhất 6 ký tự");
+      error.field = "new_password";
+      throw error;
+    }
+
+    const isSameAsCurrent = await bcrypt.compare(newPassword, user.mat_khau);
+    if (isSameAsCurrent) {
+      const error = new Error("Mật khẩu mới không được trùng với mật khẩu cũ");
+      error.field = "new_password";
+      throw error;
+    }
+
+    if (confirmPassword !== newPassword) {
+      const error = new Error("Mật khẩu nhập lại không khớp");
+      error.field = "confirm_password";
+      throw error;
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await user.update({
+      mat_khau: hashedPassword,
+      updated_at: new Date(),
+    });
+
+    return {
+      message: "Đổi mật khẩu thành công. Vui lòng đăng nhập lại!",
+      force_logout: true,
+    };
   }
 }
 
