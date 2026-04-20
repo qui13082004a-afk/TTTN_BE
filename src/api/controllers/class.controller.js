@@ -183,6 +183,42 @@ exports.getStudentsByClassId = async (req, res) => {
   }
 };
 
+exports.getGroupsByClassId = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await lopHocService.getGroupsByClassId(Number(id), req.user);
+
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.getUngroupedStudentsByClassId = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await lopHocService.getUngroupedStudentsByClassId(Number(id), req.user);
+
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.autoGroupStudents = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await lopHocService.autoGroupStudents(Number(id), req.user);
+
+    res.json({
+      message: "Phan nhom tu dong thanh cong",
+      ...result,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 exports.addStudentToClassByEmail = async (req, res) => {
   try {
     const { id } = req.params;
