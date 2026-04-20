@@ -125,7 +125,7 @@ class LopHocService {
     return await this.buildClassCardData(lopHoc);
   }
 
-  async getStudentsByClassId(id_lop, actor) {
+  async getStudentsByClassId(id_lop, actor, keyword) {
     if (!id_lop) {
       throw new Error("ID lop khong duoc de trong");
     }
@@ -146,6 +146,37 @@ class LopHocService {
 
     this.ensureLecturerOwnsClass(lopHoc, actor);
 
+    const groups = await NhomHoc.findAll({
+      where: { id_lop: lopHoc.id_lop },
+      attributes: ["id_nhom", "ma_nhom", "ten_nhom"],
+    });
+
+    const groupIds = groups.map((group) => group.id_nhom);
+    const members = groupIds.length > 0
+      ? await ThanhVienNhom.findAll({
+        where: { id_nhom: groupIds },
+        attributes: ["id_nhom", "id_sinh_vien"],
+      })
+      : [];
+
+    const groupMap = new Map(groups.map((group) => [Number(group.id_nhom), group]));
+    const studentGroupMap = new Map();
+
+    for (const member of members) {
+      studentGroupMap.set(Number(member.id_sinh_vien), Number(member.id_nhom));
+    }
+
+    const normalizedKeyword = String(keyword || "").trim().toLowerCase();
+    const filteredStudents = (lopHoc.sinh_viens || []).filter((student) => {
+      if (!normalizedKeyword) {
+        return true;
+      }
+
+      const mssv = String(student.mssv || "").toLowerCase();
+      const hoTen = String(student.ho_ten || "").toLowerCase();
+      return mssv.includes(normalizedKeyword) || hoTen.includes(normalizedKeyword);
+    });
+
     return {
       class: {
         id_lop: lopHoc.id_lop,
@@ -154,9 +185,27 @@ class LopHocService {
         id_giang_vien: lopHoc.id_giang_vien,
         han_chot_dang_ky: lopHoc.han_chot_dang_ky,
       },
-      students: (lopHoc.sinh_viens || []).sort((a, b) =>
-        String(a.ho_ten || "").localeCompare(String(b.ho_ten || ""), "vi")
-      ),
+      keyword: normalizedKeyword || null,
+      students: filteredStudents
+        .map((student) => {
+          const studentJson = student.toJSON();
+          const groupId = studentGroupMap.get(Number(student.id_sinh_vien)) || null;
+          const group = groupId ? groupMap.get(groupId) : null;
+
+          return {
+            ...studentJson,
+            group: group
+              ? {
+                id_nhom: group.id_nhom,
+                ma_nhom: group.ma_nhom,
+                ten_nhom: group.ten_nhom,
+              }
+              : null,
+            is_grouped: Boolean(group),
+            group_display: group?.ma_nhom || "Chua co",
+          };
+        })
+        .sort((a, b) => String(a.ho_ten || "").localeCompare(String(b.ho_ten || ""), "vi")),
     };
   }
 
@@ -192,6 +241,205 @@ class LopHocService {
           : [],
         so_thanh_vien: Array.isArray(group.sinh_viens) ? group.sinh_viens.length : 0,
       })),
+    };
+  }
+
+  async getGroupManagementSummary(id_lop, actor) {
+    const lopHoc = await this.getOwnedClass(id_lop, actor);
+    const totalStudents = await SinhVienLopHoc.count({
+      where: {
+        id_lop: lopHoc.id_lop,
+        trang_thai: "dang_hoc",
+      },
+    });
+    const ungroupedStudents = await this.findUngroupedStudentsByClassId(lopHoc.id_lop);
+    const groupedStudents = Math.max(totalStudents - ungroupedStudents.length, 0);
+    const now = new Date();
+    const registrationDeadline = lopHoc.han_chot_dang_ky ? new Date(lopHoc.han_chot_dang_ky) : null;
+    const isExpired = registrationDeadline ? registrationDeadline < now : false;
+
+    return {
+      class: {
+        id_lop: lopHoc.id_lop,
+        ma_lop: lopHoc.ma_lop,
+        ten_lop: lopHoc.ten_lop,
+        hoc_ky: lopHoc.hoc_ky,
+        han_chot_dang_ky: lopHoc.han_chot_dang_ky,
+        trang_thai: lopHoc.trang_thai,
+      },
+      stats: {
+        grouped_students: groupedStudents,
+        total_students: totalStudents,
+        ungrouped_students: ungroupedStudents.length,
+      },
+      registration_status: {
+        is_expired: isExpired,
+        label: isExpired ? "Da het han dang ky" : "Dang mo",
+      },
+      actions: {
+        can_create_group: !isExpired,
+        can_auto_group: isExpired && ungroupedStudents.length > 0,
+      },
+    };
+  }
+
+  async getAvailableGroupsByClassId(id_lop, actor) {
+    const data = await this.getGroupsByClassId(id_lop, actor);
+    const availableGroups = data.groups
+      .map((group) => ({
+        id_nhom: group.id_nhom,
+        ma_nhom: group.ma_nhom,
+        ten_nhom: group.ten_nhom,
+        so_thanh_vien: Number(group.so_thanh_vien || 0),
+        so_luong_toi_da: Number(group.so_luong_toi_da || 0),
+      }))
+      .filter((group) => group.so_thanh_vien < group.so_luong_toi_da)
+      .sort((a, b) => {
+        if (a.so_thanh_vien !== b.so_thanh_vien) {
+          return a.so_thanh_vien - b.so_thanh_vien;
+        }
+        return a.id_nhom - b.id_nhom;
+      });
+
+    return {
+      class: data.class,
+      count: availableGroups.length,
+      groups: availableGroups,
+    };
+  }
+
+  async createGroupForClass(id_lop, actor, data = {}) {
+    const lopHoc = await this.getOwnedClass(id_lop, actor);
+    const now = new Date();
+    if (lopHoc.han_chot_dang_ky && new Date(lopHoc.han_chot_dang_ky) < now) {
+      throw new Error("Lop hoc da het han dang ky nen khong the tao nhom moi");
+    }
+
+    const existingGroups = await NhomHoc.findAll({
+      where: { id_lop: lopHoc.id_lop },
+      attributes: ["id_nhom", "ma_nhom", "ten_nhom", "so_luong_toi_da"],
+      order: [["id_nhom", "ASC"]],
+    });
+
+    if (Number(lopHoc.so_nhom_toi_da || 0) > 0 && existingGroups.length >= Number(lopHoc.so_nhom_toi_da)) {
+      throw new Error("Da dat toi da so nhom cho phep cua lop hoc");
+    }
+
+    const nextIndex = existingGroups.length + 1;
+    const defaultCode = this.generateGroupCode(lopHoc, nextIndex);
+    const groupName = String(data.ten_nhom || "").trim() || `Nhom ${nextIndex}`;
+    const groupCode = String(data.ma_nhom || "").trim() || defaultCode;
+    const maxMembers = Number(data.so_luong_toi_da || this.getDefaultGroupCapacity(lopHoc));
+
+    if (!Number.isInteger(maxMembers) || maxMembers <= 0) {
+      throw new Error("So luong toi da cua nhom phai la so nguyen lon hon 0");
+    }
+
+    const duplicatedCode = await NhomHoc.findOne({
+      where: {
+        id_lop: lopHoc.id_lop,
+        ma_nhom: groupCode,
+      },
+    });
+
+    if (duplicatedCode) {
+      throw new Error("Ma nhom da ton tai trong lop hoc");
+    }
+
+    const group = await NhomHoc.create({
+      id_lop: lopHoc.id_lop,
+      ma_nhom: groupCode,
+      ten_nhom: groupName,
+      trang_thai: "thu_cong",
+      so_luong_toi_da: maxMembers,
+    });
+
+    return {
+      id_nhom: group.id_nhom,
+      ma_nhom: group.ma_nhom,
+      ten_nhom: group.ten_nhom,
+      so_luong_toi_da: group.so_luong_toi_da,
+      so_thanh_vien: 0,
+    };
+  }
+
+  async assignStudentToGroup({ id_lop, id_nhom, id_sinh_vien, actor }) {
+    if (!id_lop || !id_nhom || !id_sinh_vien) {
+      throw new Error("ID lop, ID nhom va ID sinh vien la bat buoc");
+    }
+
+    const lopHoc = await this.getOwnedClass(id_lop, actor);
+    const [group, enrollment] = await Promise.all([
+      NhomHoc.findByPk(id_nhom),
+      SinhVienLopHoc.findOne({
+        where: {
+          id_lop: lopHoc.id_lop,
+          id_sinh_vien,
+          trang_thai: "dang_hoc",
+        },
+      }),
+    ]);
+
+    if (!group || Number(group.id_lop) !== Number(lopHoc.id_lop)) {
+      throw new Error("Nhom hoc khong thuoc lop nay");
+    }
+
+    if (!enrollment) {
+      throw new Error("Sinh vien khong thuoc lop hoc nay");
+    }
+
+    const existingGroups = await NhomHoc.findAll({
+      where: { id_lop: lopHoc.id_lop },
+      attributes: ["id_nhom"],
+    });
+
+    const existingMembership = existingGroups.length > 0
+      ? await ThanhVienNhom.findOne({
+        where: {
+          id_sinh_vien,
+          id_nhom: existingGroups.map((item) => item.id_nhom),
+        },
+      })
+      : null;
+
+    if (existingMembership) {
+      throw new Error("Sinh vien da co nhom trong lop hoc nay");
+    }
+
+    const currentMemberCount = await ThanhVienNhom.count({
+      where: { id_nhom: group.id_nhom },
+    });
+
+    if (currentMemberCount >= Number(group.so_luong_toi_da || 0)) {
+      throw new Error("Nhom da day, khong the them sinh vien moi");
+    }
+
+    await ThanhVienNhom.create({
+      id_nhom: group.id_nhom,
+      id_sinh_vien,
+      vai_tro_noi_bo: "thanh_vien",
+      ngay_gia_nhap: new Date(),
+    });
+
+    const updatedMemberCount = currentMemberCount + 1;
+    const student = await SinhVien.findByPk(id_sinh_vien, {
+      attributes: ["id_sinh_vien", "mssv", "ho_ten", "email"],
+    });
+
+    return {
+      class: {
+        id_lop: lopHoc.id_lop,
+        ma_lop: lopHoc.ma_lop,
+        ten_lop: lopHoc.ten_lop,
+      },
+      group: {
+        id_nhom: group.id_nhom,
+        ma_nhom: group.ma_nhom,
+        ten_nhom: group.ten_nhom,
+        so_thanh_vien: updatedMemberCount,
+        so_luong_toi_da: Number(group.so_luong_toi_da || 0),
+      },
+      student: student ? student.toJSON() : { id_sinh_vien },
     };
   }
 
@@ -639,6 +887,17 @@ class LopHocService {
     }
 
     return Number(lopHoc.si_so_toi_da || 5);
+  }
+
+  getDefaultGroupCapacity(lopHoc) {
+    const classSize = Number(lopHoc.si_so_toi_da || 0);
+    const maxGroups = Number(lopHoc.so_nhom_toi_da || 0);
+
+    if (classSize > 0 && maxGroups > 0) {
+      return Math.max(1, Math.ceil(classSize / maxGroups));
+    }
+
+    return 5;
   }
 
   generateGroupCode(lopHoc, nextIndex) {
