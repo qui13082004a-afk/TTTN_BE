@@ -1,5 +1,6 @@
 const fs = require("fs/promises");
 const lopHocService = require("../services/lopHoc.service");
+const groupChangeRequestService = require("../services/groupChangeRequest.service");
 
 exports.createClass = async (req, res) => {
   try {
@@ -223,6 +224,26 @@ exports.getGroupManagementSummary = async (req, res) => {
   try {
     const { id } = req.params;
     const result = await lopHocService.getGroupManagementSummary(Number(id), req.user);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.getPendingGroupChangeRequestsByClass = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await groupChangeRequestService.getPendingRequestsByClass(Number(id), req.user);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.getPendingGroupChangeRequestCountByClass = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await groupChangeRequestService.getPendingCountByClass(Number(id), req.user);
     res.json(result);
   } catch (error) {
     res.status(400).json({ message: error.message });

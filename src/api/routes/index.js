@@ -9,29 +9,33 @@ const moveRoute = require("./move.route");
 const kickRoute = require("./kick_student.route");
 const dashboardRoute = require("./dashboard.route");
 const calendarRoute = require("./calendar.route");
+const groupChangeRequestRoute = require("./group_change_request.route");
 
-// Nhóm API xác thực và tài khoản
+// Nhom API xac thuc va tai khoan
 router.use("/auth", authRoute);
 
-// Nhóm API import dữ liệu sinh viên
+// Nhom API import du lieu sinh vien
 router.use("/import", importRoute);
 
-// Nhóm API lấy thông tin người dùng
+// Nhom API lay thong tin nguoi dung
 router.use("/users", userRoute);
 
-// Nhóm API quản lý lớp học, sinh viên và nhóm học
+// Nhom API quan ly lop hoc, sinh vien va nhom hoc
 router.use("/classes", classRoute);
 
-// Nhóm API chuyển sinh viên giữa các nhóm
+// Nhom API chuyen sinh vien giua cac nhom
 router.use("/move", moveRoute);
 
-// Nhóm API xóa sinh viên khỏi nhóm
+// Nhom API xoa sinh vien khoi nhom
 router.use("/kick", kickRoute);
 
-// Nhóm API dữ liệu bảng điều khiển giảng viên
+// Nhom API du lieu bang dieu khien giang vien
 router.use("/dashboard", dashboardRoute);
 
-// Nhóm API lịch làm việc và sự kiện theo ngày/tháng
+// Nhom API lich lam viec va su kien theo ngay/thang
 router.use("/calendar", calendarRoute);
+
+// Nhom API yeu cau chuyen nhom
+router.use("/group-change-requests", groupChangeRequestRoute);
 
 module.exports = router;
