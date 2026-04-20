@@ -51,6 +51,10 @@ NhomHoc.belongsToMany(SinhVien, {
   foreignKey: "id_nhom",
   otherKey: "id_sinh_vien",
 });
+ThanhVienNhom.belongsTo(NhomHoc, { foreignKey: "id_nhom" });
+ThanhVienNhom.belongsTo(SinhVien, { foreignKey: "id_sinh_vien" });
+NhomHoc.hasMany(ThanhVienNhom, { foreignKey: "id_nhom" });
+SinhVien.hasMany(ThanhVienNhom, { foreignKey: "id_sinh_vien" });
 NhomHoc.belongsTo(SinhVien, { as: "nhom_truong", foreignKey: "id_nhom_truong" });
 SinhVien.hasMany(NhomHoc, { as: "nhom_lam_truong", foreignKey: "id_nhom_truong" });
 
