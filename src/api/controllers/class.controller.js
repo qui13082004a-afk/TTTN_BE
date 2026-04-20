@@ -1,5 +1,5 @@
-const lopHocService = require("../services/lopHoc.service");
 const fs = require("fs/promises");
+const lopHocService = require("../services/lopHoc.service");
 
 exports.createClass = async (req, res) => {
   try {
@@ -42,7 +42,7 @@ exports.createClass = async (req, res) => {
 exports.getClassById = async (req, res) => {
   try {
     const { id } = req.params;
-    const lopHoc = await lopHocService.getClassById(id);
+    const lopHoc = await lopHocService.getClassById(Number(id));
 
     res.json({
       class: lopHoc,
@@ -55,7 +55,7 @@ exports.getClassById = async (req, res) => {
 exports.getClassesByLecturer = async (req, res) => {
   try {
     const { id_giang_vien } = req.params;
-    const classes = await lopHocService.getClassesByLecturer(id_giang_vien);
+    const classes = await lopHocService.getClassesByLecturer(Number(id_giang_vien));
 
     res.json({
       count: classes.length,
@@ -95,7 +95,7 @@ exports.updateClass = async (req, res) => {
       han_chot_dang_ky_nhom,
     } = req.body;
 
-    const updated = await lopHocService.updateClass(id, {
+    const updated = await lopHocService.updateClass(Number(id), {
       ten_lop,
       ma_lop,
       id_mon_hoc,
@@ -117,10 +117,34 @@ exports.updateClass = async (req, res) => {
   }
 };
 
+exports.getDeleteCheck = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await lopHocService.getDeleteCheck(Number(id), req.user);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.hideClass = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await lopHocService.hideClass(Number(id), req.user);
+
+    res.json({
+      message: "An lop hoc thanh cong",
+      class: result,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 exports.deleteClass = async (req, res) => {
   try {
     const { id } = req.params;
-    await lopHocService.deleteClass(id);
+    await lopHocService.deleteClass(Number(id), req.user);
 
     res.json({
       message: "Xoa lop hoc thanh cong",
@@ -132,16 +156,17 @@ exports.deleteClass = async (req, res) => {
 
 exports.searchByClassName = async (req, res) => {
   try {
-    const { ten_lop } = req.query;
+    const keyword = req.query.keyword || req.query.ten_lop || req.query.ma_mon_hoc;
 
-    if (!ten_lop) {
-      return res.status(400).json({ message: "Ten lop khong duoc de trong" });
+    if (!keyword) {
+      return res.status(400).json({ message: "Tu khoa tim kiem khong duoc de trong" });
     }
 
-    const classes = await lopHocService.searchByClassName(ten_lop);
+    const classes = await lopHocService.searchClasses(keyword);
 
     res.json({
       count: classes.length,
+      keyword,
       classes,
     });
   } catch (error) {

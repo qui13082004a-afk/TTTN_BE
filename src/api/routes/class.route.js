@@ -6,36 +6,52 @@ const { authenticateToken, authorizeLecturer } = require("../middlewares/auth.mi
 
 const upload = multer({ dest: "uploads/" });
 
-// Create class
+// Tạo lớp học mới
 router.post("/", authenticateToken, authorizeLecturer, classController.createClass);
 
-// Get all classes
+// Lấy toàn bộ danh sách lớp học
 router.get("/", classController.getAllClasses);
 
-// Search by class name (đặt trước /:id để tránh conflict)
+// Tìm lớp học theo tên lớp hoặc mã môn học
 router.get("/search/class", classController.searchByClassName);
 
-// Search by lecturer name (đặt trước /:id để tránh conflict)
+// Tìm lớp học theo tên giảng viên
 router.get("/search/lecturer", classController.searchByLecturerName);
 
-// Get classes by lecturer
-router.get("/lecturer/:id_giang_vien", classController.getClassesByLecturer);
+// Lấy danh sách lớp học theo giảng viên
+router.get("/lecturer/:id_giang_vien", authenticateToken, authorizeLecturer, classController.getClassesByLecturer);
 
-// Add students to class
+// Kiểm tra lớp có thể xóa cứng hay chỉ nên ẩn
+router.get("/:id/delete-check", authenticateToken, authorizeLecturer, classController.getDeleteCheck);
+
+// Ẩn lớp học để bảo toàn dữ liệu hoạt động
+router.patch("/:id/hide", authenticateToken, authorizeLecturer, classController.hideClass);
+
+// Thêm một sinh viên vào lớp bằng email
 router.post("/:id/students/manual", authenticateToken, authorizeLecturer, classController.addStudentToClassByEmail);
+
+// Import danh sách sinh viên vào lớp bằng file Excel
 router.post("/:id/students/import", authenticateToken, authorizeLecturer, upload.single("file"), classController.importStudentsToClass);
+
+// Lấy danh sách sinh viên của lớp
 router.get("/:id/students", authenticateToken, authorizeLecturer, classController.getStudentsByClassId);
+
+// Lấy danh sách các nhóm trong lớp
 router.get("/:id/groups", authenticateToken, authorizeLecturer, classController.getGroupsByClassId);
+
+// Lấy danh sách sinh viên trong lớp nhưng chưa có nhóm
 router.get("/:id/ungrouped-students", authenticateToken, authorizeLecturer, classController.getUngroupedStudentsByClassId);
+
+// Tự động phân nhóm sinh viên cho lớp
 router.post("/:id/auto-group", authenticateToken, authorizeLecturer, classController.autoGroupStudents);
 
-// Get class by ID
+// Lấy chi tiết lớp học theo ID
 router.get("/:id", classController.getClassById);
 
-// Update class
+// Cập nhật thông tin lớp học
 router.patch("/:id", classController.updateClass);
 
-// Delete class
-router.delete("/:id", classController.deleteClass);
+// Xóa lớp học
+router.delete("/:id", authenticateToken, authorizeLecturer, classController.deleteClass);
 
 module.exports = router;
