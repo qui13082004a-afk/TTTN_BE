@@ -7,6 +7,7 @@ const NhatKy = require("./nhat_ky.model");
 const TinNhan = require("./tin_nhan.model");
 const SinhVienLopHoc = require("./sinh_vien_lop_hoc.model");
 const ThanhVienNhom = require("./thanh_vien_nhom.model");
+const YeuCauChuyenNhom = require("./yeu_cau_chuyen_nhom.model");
 const { sequelize } = require("../../config/database");
 // 1. Giảng viên - Lớp học (1-n)
 GiangVien.hasMany(LopHoc, { foreignKey: "id_giang_vien" });
@@ -53,6 +54,16 @@ NhomHoc.belongsToMany(SinhVien, {
 NhomHoc.belongsTo(SinhVien, { as: "nhom_truong", foreignKey: "id_nhom_truong" });
 SinhVien.hasMany(NhomHoc, { as: "nhom_lam_truong", foreignKey: "id_nhom_truong" });
 
+// 9. Sinh vien - Yeu cau chuyen nhom (1-n)
+SinhVien.hasMany(YeuCauChuyenNhom, { foreignKey: "id_sinh_vien" });
+YeuCauChuyenNhom.belongsTo(SinhVien, { foreignKey: "id_sinh_vien" });
+
+// 10. Nhom cu / nhom moi - Yeu cau chuyen nhom (1-n)
+NhomHoc.hasMany(YeuCauChuyenNhom, { as: "yeu_cau_roi_nhom", foreignKey: "id_nhom_cu" });
+YeuCauChuyenNhom.belongsTo(NhomHoc, { as: "nhom_cu", foreignKey: "id_nhom_cu" });
+NhomHoc.hasMany(YeuCauChuyenNhom, { as: "yeu_cau_vao_nhom", foreignKey: "id_nhom_moi" });
+YeuCauChuyenNhom.belongsTo(NhomHoc, { as: "nhom_moi", foreignKey: "id_nhom_moi" });
+
 module.exports = {
   sequelize,
   GiangVien,
@@ -64,4 +75,5 @@ module.exports = {
   TinNhan,
   SinhVienLopHoc,
   ThanhVienNhom,
+  YeuCauChuyenNhom,
 };
