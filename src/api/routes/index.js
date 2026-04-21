@@ -10,6 +10,8 @@ const kickRoute = require("./kick_student.route");
 const dashboardRoute = require("./dashboard.route");
 const calendarRoute = require("./calendar.route");
 const groupChangeRequestRoute = require("./group_change_request.route");
+const groupJoin = require("./group_join.route");
+const groupShow = require("./group_show.route");
 
 // Nhom API xac thuc va tai khoan
 router.use("/auth", authRoute);
@@ -37,5 +39,11 @@ router.use("/calendar", calendarRoute);
 
 // Nhom API yeu cau chuyen nhom
 router.use("/group-change-requests", groupChangeRequestRoute);
+
+//Nhom API vao nhom
+router.use("/group-join", groupJoin);
+
+//Nhom API danh sach nhom
+router.use("/group-show", groupShow);
 
 module.exports = router;

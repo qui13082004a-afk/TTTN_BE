@@ -40,7 +40,7 @@ LopHoc.belongsToMany(SinhVien, {
   foreignKey: "id_lop",
   otherKey: "id_sinh_vien",
 });
-// 8. Sinh viÃªn - NhÃ³m há»c (n-n)
+// 8. Sinh viên - Nhóm học (n-n)
 SinhVien.belongsToMany(NhomHoc, {
   through: ThanhVienNhom,
   foreignKey: "id_sinh_vien",
