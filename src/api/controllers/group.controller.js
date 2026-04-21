@@ -15,6 +15,26 @@ const joinGroup = async (req, res) => {
   }
 };
 
+const getMyGroups = async (req, res) => {
+  try {
+    const studentId = 158;
+    const keyword = req.query.keyword || "";
+
+    const data = await groupService.getMyGroups(studentId, keyword);
+
+    return res.json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
-  joinGroup
+  joinGroup,
+  getMyGroups
 };

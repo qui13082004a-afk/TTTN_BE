@@ -10,7 +10,7 @@ const LopHoc = sequelize.define("lop_hoc", {
   },
   id_giang_vien: { type: DataTypes.INTEGER },
   ten_lop: { type: DataTypes.STRING(100), allowNull: false },
-  han_chot_dang_ky_nhom: { type: DataTypes.DATE },
+  han_chot_dang_ky: { type: DataTypes.DATE },
 }, { tableName: "lop_hoc", timestamps: false });
 
 module.exports = LopHoc;
