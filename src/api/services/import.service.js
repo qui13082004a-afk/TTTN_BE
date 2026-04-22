@@ -9,12 +9,13 @@ class ImportService {
     const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
     if (data.length === 0) {
-      throw new Error("File rong");
+      throw new Error("File rỗng");
     }
 
     let inserted = 0;
     let skipped = 0;
     const warnings = [];
+
     const defaultPassword = await bcrypt.hash("123456", 10);
 
     for (const [index, row] of data.entries()) {
@@ -22,14 +23,15 @@ class ImportService {
       const hoLot = (row["Ho lot"] || row["Họ lót"] || "").toString().trim();
       const ten = (row["Ten"] || row["Tên"] || "").toString().trim();
       const email = (row["Email"] || "").toString().trim().toLowerCase();
-      const maSV = (row["Mã sinh viên"] || row["Ma sinh vien"] || row.MSSV || "").toString().trim();
+      const maSV = (row["Mã sinh viên"] || row["Ma sinh vien"] || row["MSSV"] || "").toString().trim();
 
       if (!ten) {
-        throw new Error(`Dong ${lineNumber} bi thieu Ten`);
+        throw new Error(`Dòng ${lineNumber} bị thiếu Tên`);
       }
 
       if (!email && !maSV) {
-        warnings.push(`Dong ${lineNumber} thieu ca Email va MSSV nen khong the tao tai khoan`);
+        skipped++;
+        warnings.push(`Dòng ${lineNumber} thiếu cả Email và MSSV nên không thể tạo tài khoản`);
         continue;
       }
 
@@ -40,7 +42,7 @@ class ImportService {
 
       if (existedAccount) {
         skipped++;
-        warnings.push(`Dong ${lineNumber} da co tai khoan trong he thong`);
+        warnings.push(`Dòng ${lineNumber} đã có tài khoản trong hệ thống`);
         continue;
       }
 
