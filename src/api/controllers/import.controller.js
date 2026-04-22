@@ -4,22 +4,21 @@ exports.importSinhVien = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
-        message: "Chưa upload file"
+        message: "Chưa upload file",
       });
     }
 
     const result = await importService.importSinhVienFromExcel(req.file.path);
 
-    res.json({
-      message: "Import thành công",
+    return res.json({
+      message: `Import thành công ${result.inserted} sinh viên mới, bỏ qua ${result.skipped} sinh viên đã có tài khoản`,
       inserted: result.inserted,
       skipped: result.skipped,
-      warnings: result.warnings
+      warnings: result.warnings,
     });
-
   } catch (error) {
-    res.status(400).json({
-      message: error.message
+    return res.status(400).json({
+      message: error.message,
     });
   }
 };

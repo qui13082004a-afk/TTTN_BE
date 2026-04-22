@@ -4,31 +4,42 @@ const sinhVienRepo = require("../repositories/sinhVien.repository");
 const { GiangVien } = require("../models");
 
 class AuthService {
+  getLecturerRole(lecturer) {
+    const adminEmails = String(process.env.ADMIN_EMAILS || "admin@example.com")
+      .split(",")
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean);
+
+    return adminEmails.includes(String(lecturer?.email || "").toLowerCase())
+      ? "admin"
+      : "giangvien";
+  }
+
   async registerLecturer({ ho_ten, email, password }) {
     const fullName = (ho_ten || "").trim();
     const normalizedEmail = (email || "").trim().toLowerCase();
     const rawPassword = String(password || "");
 
     if (!fullName) {
-      throw new Error("Họ tên giảng viên không được để trống");
+      throw new Error("Ho ten giang vien khong duoc de trong");
     }
 
     if (!normalizedEmail) {
-      throw new Error("Email không được để trống");
+      throw new Error("Email khong duoc de trong");
     }
 
     if (!rawPassword) {
-      throw new Error("Mật khẩu không được để trống");
+      throw new Error("Mat khau khong duoc de trong");
     }
 
     const lecturer = await GiangVien.findOne({ where: { email: normalizedEmail } });
     if (lecturer) {
-      throw new Error("Email này đã được dùng cho tài khoản giảng viên");
+      throw new Error("Email nay da duoc dung cho tai khoan giang vien");
     }
 
     const student = await sinhVienRepo.findByEmail(normalizedEmail);
     if (student) {
-      throw new Error("Email này đã được dùng cho tài khoản sinh viên");
+      throw new Error("Email nay da duoc dung cho tai khoan sinh vien");
     }
 
     const hashedPassword = await bcrypt.hash(rawPassword, 10);
@@ -37,14 +48,13 @@ class AuthService {
       ho_ten: fullName,
       email: normalizedEmail,
       mat_khau: hashedPassword,
-      role: "giangvien",
     });
 
     return {
       id_giang_vien: newLecturer.id_giang_vien,
       ho_ten: newLecturer.ho_ten,
       email: newLecturer.email,
-      role: "giangvien",
+      role: this.getLecturerRole(newLecturer),
     };
   }
 
@@ -57,13 +67,17 @@ class AuthService {
       user = await sinhVienRepo.findByEmail(normalizedEmail);
       role = "sinhvien";
     } else {
-      role = user.role || "giangvien";
+      role = this.getLecturerRole(user);
     }
 
-    if (!user) throw new Error("Sai email");
+    if (!user) {
+      throw new Error("Sai email");
+    }
 
     const isMatch = await bcrypt.compare(password, user.mat_khau);
-    if (!isMatch) throw new Error("Sai mật khẩu");
+    if (!isMatch) {
+      throw new Error("Sai mat khau");
+    }
 
     const token = jwt.sign(
       {
@@ -80,9 +94,9 @@ class AuthService {
         id: role === "sinhvien" ? user.id_sinh_vien : user.id_giang_vien,
         ho_ten: user.ho_ten,
         email: user.email,
-        role
+        role,
       },
-      token
+      token,
     };
   }
 }

@@ -9,7 +9,7 @@ const CongViec = sequelize.define("cong_viec", {
     allowNull: false,
   },
   id_nhom: { type: DataTypes.INTEGER },
-  id_sinh_vien: { type: DataTypes.INTEGER },
+  id_sinh_vien_phu_trach: { type: DataTypes.INTEGER },
   ten_cong_viec: { type: DataTypes.STRING(255), allowNull: false },
   han_chot: { type: DataTypes.DATE },
   trang_thai: { type: DataTypes.STRING(50) },

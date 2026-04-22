@@ -19,40 +19,47 @@ class ImportService {
     const defaultPassword = await bcrypt.hash("123456", 10);
 
     for (const [index, row] of data.entries()) {
-      const hoLot = (row["Họ lót"] || "").toString().trim();
-      const ten = (row["Tên"] || "").toString().trim();
-      const email = (row["Email"] || "").toString().trim();
+      const lineNumber = index + 2;
+      const hoLot = (row["Ho lot"] || row["Họ lót"] || "").toString().trim();
+      const ten = (row["Ten"] || row["Tên"] || "").toString().trim();
+      const email = (row["Email"] || "").toString().trim().toLowerCase();
+      const maSV = (row["Mã sinh viên"] || row["Ma sinh vien"] || row["MSSV"] || "").toString().trim();
+
+      if (!ten) {
+        throw new Error(`Dòng ${lineNumber} bị thiếu Tên`);
+      }
+
+      if (!email && !maSV) {
+        skipped++;
+        warnings.push(`Dòng ${lineNumber} thiếu cả Email và MSSV nên không thể tạo tài khoản`);
+        continue;
+      }
+
+      const existedAccount = await sinhVienRepo.findExistingAccount({
+        email: email || null,
+        mssv: maSV || null,
+      });
+
+      if (existedAccount) {
+        skipped++;
+        warnings.push(`Dòng ${lineNumber} đã có tài khoản trong hệ thống`);
+        continue;
+      }
 
       const hoTenDayDu = `${hoLot} ${ten}`.trim();
-
-      if (!hoTenDayDu || !email) {
-        skipped++;
-        warnings.push(`Dòng ${index + 2} thiếu dữ liệu`);
-        continue;
-      }
-
-      const exist = await sinhVienRepo.findByEmail(email);
-
-      if (exist) {
-        skipped++;
-        warnings.push(`Dòng ${index + 2} email đã tồn tại`);
-        continue;
-      }
+      const generatedEmail = email || `${maSV}@student.stu.edu.vn`.toLowerCase();
 
       await sinhVienRepo.create({
+        mssv: maSV || null,
         ho_ten: hoTenDayDu,
-        email: email,
-        mat_khau: defaultPassword
+        email: generatedEmail,
+        mat_khau: defaultPassword,
       });
 
       inserted++;
     }
 
-    return {
-      inserted,
-      skipped,
-      warnings
-    };
+    return { inserted, skipped, warnings };
   }
 }
 

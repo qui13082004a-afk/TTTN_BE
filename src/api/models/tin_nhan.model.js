@@ -9,7 +9,7 @@ const TinNhan = sequelize.define("tin_nhan", {
     allowNull: false,
   },
   id_nhom: { type: DataTypes.INTEGER },
-  id_sinh_vien: { type: DataTypes.INTEGER },
+  id_nguoi_gui: { type: DataTypes.INTEGER, allowNull: false },
   noi_dung: { type: DataTypes.TEXT },
   da_thu_hoi: { type: DataTypes.BOOLEAN, defaultValue: false },
   thoi_gian_gui: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
