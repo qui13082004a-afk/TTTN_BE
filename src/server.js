@@ -1,6 +1,7 @@
 const { sequelize } = require("./config/database");
 const express = require("express");
 const app = express();
+
 const { SinhVienLopHoc } = require("./api/models");
 require("dotenv").config();
 
