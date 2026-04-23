@@ -34,7 +34,25 @@ const getMyGroups = async (req, res) => {
   }
 };
 
+const getStudentsByGroupId = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const result = await groupService.getStudentsByGroupId(groupId, req.user);
+
+    return res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   joinGroup,
-  getMyGroups
+  getMyGroups,
+  getStudentsByGroupId
 };
