@@ -15,6 +15,10 @@ const {
 } = require("../models");
 
 class LopHocService {
+  async syncExpiredClassStatuses(filters = {}) {
+    await lopHocRepo.markExpiredClasses(filters);
+  }
+
   async createClass(data) {
     const {
       id_giang_vien,
@@ -117,6 +121,7 @@ class LopHocService {
   }
 
   async getClassById(id) {
+    await this.syncExpiredClassStatuses({ id_lop: id });
     const lopHoc = await lopHocRepo.findById(id);
     if (!lopHoc) {
       throw new Error("Lop hoc khong ton tai");
@@ -558,11 +563,13 @@ class LopHocService {
   }
 
   async getClassesByLecturer(id_giang_vien) {
+    await this.syncExpiredClassStatuses({ id_giang_vien });
     const classes = await lopHocRepo.findByLecturerId(id_giang_vien);
     return await Promise.all(classes.map((lopHoc) => this.buildClassCardData(lopHoc)));
   }
 
   async getAllClasses() {
+    await this.syncExpiredClassStatuses();
     const classes = await lopHocRepo.findAll();
     return await Promise.all(classes.map((lopHoc) => this.buildClassCardData(lopHoc)));
   }
@@ -642,6 +649,7 @@ class LopHocService {
       throw new Error("Tu khoa tim kiem khong duoc de trong");
     }
 
+    await this.syncExpiredClassStatuses();
     const classes = await lopHocRepo.findByKeyword(keyword.trim());
     return await Promise.all(classes.map((lopHoc) => this.buildClassCardData(lopHoc)));
   }
@@ -651,6 +659,7 @@ class LopHocService {
       throw new Error("Ten giang vien khong duoc de trong");
     }
 
+    await this.syncExpiredClassStatuses();
     const lecturers = await GiangVien.findAll({
       where: {
         ho_ten: {

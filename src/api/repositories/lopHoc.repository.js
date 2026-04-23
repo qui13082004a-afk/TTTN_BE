@@ -49,6 +49,25 @@ class LopHocRepository {
     });
   }
 
+  async markExpiredClasses(where = {}) {
+    return await LopHoc.update(
+      {
+        trang_thai: "het_han",
+        updated_at: new Date(),
+      },
+      {
+        where: {
+          is_deleted: false,
+          trang_thai: "dang_mo",
+          han_chot_dang_ky: {
+            [Op.lt]: new Date(),
+          },
+          ...where,
+        },
+      }
+    );
+  }
+
   async update(id, data) {
     const lopHoc = await LopHoc.findByPk(id);
     if (!lopHoc) {
