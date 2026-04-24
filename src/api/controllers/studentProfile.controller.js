@@ -17,11 +17,10 @@ const getProfile = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const { id_sinh_vien, ho_ten, sdt, avatar } = req.body;
+    const { id_sinh_vien, sdt, avatar } = req.body;
 
     const result = await profileService.updateProfile({
       id_sinh_vien,
-      ho_ten,
       sdt,
       avatar
     });

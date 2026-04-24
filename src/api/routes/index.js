@@ -19,6 +19,9 @@ const groupShow = require("./group_show.route");
 const studentHomeRoute = require("./studentHome.route");
 const studentDashboardRoute = require("./studentDashboard.route");
 const studentProfileRoute = require("./studentProfile.route");
+const studentScheduleRoute = require("./studentSchedule.route");
+const studentCourseRoute = require("./studentCourse.route");
+const workspaceRoute = require("./workspace.route");
 
 // Nhom API xac thuc va tai khoan
 router.use("/auth", authRoute);
@@ -56,5 +59,8 @@ router.use("/group-show", groupShow);
 router.use("/student-home", studentHomeRoute);
 router.use("/student-dashboard", studentDashboardRoute);
 router.use("/student-profile", studentProfileRoute);
+router.use("/student-schedule", studentScheduleRoute);
+router.use("/student-courses", studentCourseRoute);
+router.use("/workspace", workspaceRoute);
 
 module.exports = router;

@@ -22,7 +22,7 @@ const getProfile = async (id) => {
 };
 
 const updateProfile = async (data) => {
-  const { id_sinh_vien, ho_ten, sdt, avatar } = data;
+  const { id_sinh_vien, sdt, avatar } = data;
 
   const student = await SinhVien.findByPk(id_sinh_vien);
 
@@ -30,8 +30,13 @@ const updateProfile = async (data) => {
     throw new Error("Không tìm thấy sinh viên");
   }
 
+  const phoneRegex = /^[0-9]{10}$/;
+
+  if (sdt && !phoneRegex.test(sdt)) {
+    throw new Error("Số điện thoại phải gồm đúng 10 chữ số");
+  }
+
   await student.update({
-    ho_ten,
     sdt,
     avatar
   });

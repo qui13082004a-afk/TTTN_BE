@@ -2,7 +2,8 @@ const groupService = require("../services/groupJoin.service");
 
 const joinGroups = async (req, res) => {
   try {
-    const { id_sinh_vien, id_nhom } = req.body;
+    const id_sinh_vien = req.user?.id || req.body.id_sinh_vien;
+    const { id_nhom } = req.body;
 
     const result = await groupService.joinGroups(id_sinh_vien, id_nhom);
 
@@ -17,7 +18,8 @@ const joinGroups = async (req, res) => {
 
 const joinByCode = async (req, res) => {
   try {
-    const { id_sinh_vien, ma_nhom } = req.body;
+    const id_sinh_vien = req.user?.id || req.body.id_sinh_vien;
+    const { ma_nhom } = req.body;
 
     const result = await groupService.joinByCode(id_sinh_vien, ma_nhom);
 
