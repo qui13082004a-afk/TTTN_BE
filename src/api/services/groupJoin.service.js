@@ -79,6 +79,19 @@ const joinGroups = async (id_sinh_vien, id_nhom) => {
   };
 };
 
+const joinByCode = async (id_sinh_vien, ma_nhom) => {
+  const group = await NhomHoc.findOne({
+    where: { ma_nhom }
+  });
+
+  if (!group) {
+    throw new Error("Mã nhóm không tồn tại");
+  }
+
+  return await joinGroups(id_sinh_vien, group.id_nhom);
+};
+
 module.exports = {
-  joinGroups
+  joinGroups,
+  joinByCode
 };

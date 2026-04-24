@@ -61,3 +61,5 @@ app.listen(PORT, "0.0.0.0", async () => {
     console.error("Không thể kết nối Database:", error);
   }
 });
+
+app.use("/uploads", express.static("uploads"));

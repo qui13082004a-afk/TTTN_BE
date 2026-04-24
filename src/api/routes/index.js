@@ -16,6 +16,9 @@ const groupChangeRequestRoute = require("./group_change_request.route");
 // CỦA BẠN
 const groupJoin = require("./group_join.route");
 const groupShow = require("./group_show.route");
+const studentHomeRoute = require("./studentHome.route");
+const studentDashboardRoute = require("./studentDashboard.route");
+const studentProfileRoute = require("./studentProfile.route");
 
 // Nhom API xac thuc va tai khoan
 router.use("/auth", authRoute);
@@ -50,5 +53,8 @@ router.use("/group-change-requests", groupChangeRequestRoute);
 // 👉 GIỮ CỦA BẠN
 router.use("/group-join", groupJoin);
 router.use("/group-show", groupShow);
+router.use("/student-home", studentHomeRoute);
+router.use("/student-dashboard", studentDashboardRoute);
+router.use("/student-profile", studentProfileRoute);
 
 module.exports = router;

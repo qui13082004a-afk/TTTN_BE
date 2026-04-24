@@ -97,6 +97,28 @@ YeuCauChuyenNhom.belongsTo(NhomHoc, {
   foreignKey: "id_nhom_moi",
 });
 
+// 15. SinhVienLopHoc -> LopHoc
+SinhVienLopHoc.belongsTo(LopHoc, {
+  foreignKey: "id_lop",
+  as: "lop_hoc"
+});
+
+LopHoc.hasMany(SinhVienLopHoc, {
+  foreignKey: "id_lop",
+  as: "sinh_vien_lop_hoc"
+});
+
+// 16. SinhVienLopHoc -> SinhVien
+SinhVienLopHoc.belongsTo(SinhVien, {
+  foreignKey: "id_sinh_vien",
+  as: "sinh_vien"
+});
+
+SinhVien.hasMany(SinhVienLopHoc, {
+  foreignKey: "id_sinh_vien",
+  as: "sinh_vien_lop_hoc"
+});
+
 module.exports = {
   sequelize,
   GiangVien,
