@@ -2,7 +2,7 @@ const scheduleService = require("../services/studentSchedule.service");
 
 const getSchedule = async (req, res) => {
   try {
-    const { id_sinh_vien } = req.params;
+    const id_sinh_vien = req.user.id;
     const { date } = req.query;
 
     const result = await scheduleService.getSchedule(id_sinh_vien, date);
@@ -18,7 +18,7 @@ const getSchedule = async (req, res) => {
 
 const countLateTasks = async (req, res) => {
   try {
-    const { id_sinh_vien } = req.params;
+    const id_sinh_vien = req.user.id;
 
     const result = await scheduleService.countLateTasks(id_sinh_vien);
 

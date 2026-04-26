@@ -3,7 +3,7 @@ const workspaceService = require("../services/workspace.service");
 const getWorkspaceInfo = async (req, res) => {
   try {
     const { id_nhom } = req.params;
-    const { id_sinh_vien } = req.query;
+    const id_sinh_vien = req.user.id;
 
     const result = await workspaceService.getWorkspaceInfo(
       id_nhom,

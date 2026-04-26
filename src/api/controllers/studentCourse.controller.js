@@ -2,7 +2,7 @@ const courseService = require("../services/studentCourse.service");
 
 const getMyCourses = async (req, res) => {
   try {
-    const { id_sinh_vien } = req.params;
+    const id_sinh_vien = req.user.id;
 
     const result = await courseService.getMyCourses(id_sinh_vien);
 

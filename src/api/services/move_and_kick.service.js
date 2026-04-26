@@ -147,15 +147,18 @@ class AdminService {
       }
 
       const [updatedCount] = await CongViec.update(
-        { id_nhom: null },
-        {
-          where: {
-            id_sinh_vien_phu_trach: studentId,
-            id_nhom: groupId,
-          },
-          transaction,
-        }
-      );
+      {
+        id_sinh_vien_phu_trach: null,
+        trang_thai: "can_lam"
+      },
+      {
+        where: {
+          id_sinh_vien_phu_trach: studentId,
+          id_nhom: groupId
+        },
+        transaction
+      }
+    );
 
       return { updatedCount, deletedLogs, removedMembership };
     });

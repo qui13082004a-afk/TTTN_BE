@@ -1,11 +1,11 @@
-const taskService = require("../services/workspaceTask.service");
+const taskStatusService = require("../services/workspaceTaskStatus.service");
 
-const createTask = async (req, res) => {
+const updateTaskStatus = async (req, res) => {
   try {
-    const { id_nhom } = req.params;
+    const { id_cong_viec } = req.params;
 
-    const result = await taskService.createTask(
-      id_nhom,
+    const result = await taskStatusService.updateTaskStatus(
+      id_cong_viec,
       {
         ...req.body,
         id_sinh_vien: req.user.id
@@ -22,5 +22,5 @@ const createTask = async (req, res) => {
 };
 
 module.exports = {
-  createTask
+  updateTaskStatus
 };

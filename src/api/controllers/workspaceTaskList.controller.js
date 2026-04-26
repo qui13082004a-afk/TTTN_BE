@@ -1,11 +1,11 @@
-const memberService = require("../services/workspaceMember.service");
+const taskListService = require("../services/workspaceTaskList.service");
 
-const getGroupMembers = async (req, res) => {
+const getTasksByGroup = async (req, res) => {
   try {
     const { id_nhom } = req.params;
     const id_sinh_vien = req.user.id;
 
-    const result = await memberService.getGroupMembers(
+    const result = await taskListService.getTasksByGroup(
       id_nhom,
       id_sinh_vien
     );
@@ -20,5 +20,5 @@ const getGroupMembers = async (req, res) => {
 };
 
 module.exports = {
-  getGroupMembers
+  getTasksByGroup
 };

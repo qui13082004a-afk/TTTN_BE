@@ -2,7 +2,7 @@ const studentHomeService = require("../services/studentHome.service");
 
 const getStudentHome = async (req, res) => {
   try {
-    const { id_sinh_vien } = req.params;
+    const id_sinh_vien = req.user.id;
 
     const result = await studentHomeService.getStudentHome(id_sinh_vien);
 
@@ -17,7 +17,8 @@ const getStudentHome = async (req, res) => {
 
 const createGroup = async (req, res) => {
   try {
-    const { id_sinh_vien, id_lop, ten_nhom } = req.body;
+    const id_sinh_vien = req.user.id;
+    const { id_lop, ten_nhom } = req.body;
 
     const result = await studentHomeService.createGroup(
       id_sinh_vien,

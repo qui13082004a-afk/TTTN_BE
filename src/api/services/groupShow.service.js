@@ -58,7 +58,7 @@ const getGroups = async (studentId, keyword = "") => {
 
       return {
         id_nhom: group.id_nhom,
-        ma_nhom: group.ma_nhom,
+        //ma_nhom: group.ma_nhom,
         ten_nhom: group.ten_nhom,
         ten_mon_hoc: group.lop_hoc?.ten_lop || "",
         ten_giang_vien: group.lop_hoc?.giang_vien?.ho_ten || "",
