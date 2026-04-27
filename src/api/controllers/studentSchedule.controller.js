@@ -1,10 +1,11 @@
-const studentHomeService = require("../services/studentHome.service");
+const scheduleService = require("../services/studentSchedule.service");
 
-const getStudentHome = async (req, res) => {
+const getSchedule = async (req, res) => {
   try {
     const id_sinh_vien = req.user.id;
+    const { date } = req.query;
 
-    const result = await studentHomeService.getStudentHome(id_sinh_vien);
+    const result = await scheduleService.getSchedule(id_sinh_vien, date);
 
     return res.status(200).json(result);
   } catch (error) {
@@ -15,16 +16,11 @@ const getStudentHome = async (req, res) => {
   }
 };
 
-const createGroup = async (req, res) => {
+const countLateTasks = async (req, res) => {
   try {
     const id_sinh_vien = req.user.id;
-    const { id_lop, ten_nhom } = req.body;
 
-    const result = await studentHomeService.createGroup(
-      id_sinh_vien,
-      id_lop,
-      ten_nhom
-    );
+    const result = await scheduleService.countLateTasks(id_sinh_vien);
 
     return res.status(200).json(result);
   } catch (error) {
@@ -36,6 +32,6 @@ const createGroup = async (req, res) => {
 };
 
 module.exports = {
-  getStudentHome,
-  createGroup
+  getSchedule,
+  countLateTasks
 };

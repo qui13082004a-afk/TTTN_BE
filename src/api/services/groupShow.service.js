@@ -1,12 +1,30 @@
-const { Op } = require("sequelize");
+const { Op, Sequelize } = require("sequelize");
 const LopHoc = require("../models/lop_hoc.model");
 const NhomHoc = require("../models/nhom_hoc.model");
 const ThanhVienNhom = require("../models/thanh_vien_nhom.model");
-const SinhVienLopHoc = require("../models/sinh_vien_lop_hoc.model");
 const GiangVien = require("../models/giang_vien.model");
 
 const getGroups = async (studentId, keyword = "") => {
-  const s_group = await NhomHoc.findAll({
+  const whereCondition = keyword
+    ? {
+        [Op.or]: [
+          {
+            ten_nhom: {
+              [Op.like]: `%${keyword}%`
+            }
+          },
+          Sequelize.where(
+            Sequelize.col("lop_hoc.ten_lop"),
+            {
+              [Op.like]: `%${keyword}%`
+            }
+          )
+        ]
+      }
+    : {};
+
+  const groups = await NhomHoc.findAll({
+    subQuery: false,
     include: [
       {
         model: LopHoc,
@@ -21,27 +39,36 @@ const getGroups = async (studentId, keyword = "") => {
       },
       {
         model: ThanhVienNhom,
-        where: { id_sinh_vien: studentId },
-        attributes: ["id_sinh_vien"]
+        attributes: [],
+        where: {
+          id_sinh_vien: studentId
+        }
       }
     ],
-    where: keyword
-      ? {
-          ten_nhom: {
-            [Op.like]: `%${keyword}%`
-          }
-        }
-      : {}
+    where: whereCondition
   });
 
-  return s_group.map(group => ({
-    id_nhom: group.id_nhom,
-    ten_nhom: group.ten_nhom,
-    ten_mon_hoc: group.lop_hoc?.ten_lop,
-    ten_giang_vien: group.lop_hoc?.giang_vien?.ho_ten,
-    so_thanh_vien: group.thanh_vien_nhoms?.length || 0,
-    trang_thai: group.trang_thai || "Đang hoạt động"
-  }));
+  const result = await Promise.all(
+    groups.map(async (group) => {
+      const totalMembers = await ThanhVienNhom.count({
+        where: {
+          id_nhom: group.id_nhom
+        }
+      });
+
+      return {
+        id_nhom: group.id_nhom,
+        //ma_nhom: group.ma_nhom,
+        ten_nhom: group.ten_nhom,
+        ten_mon_hoc: group.lop_hoc?.ten_lop || "",
+        ten_giang_vien: group.lop_hoc?.giang_vien?.ho_ten || "",
+        so_thanh_vien: totalMembers,
+        trang_thai: "Đang hoạt động"
+      };
+    })
+  );
+
+  return result;
 };
 
 module.exports = {

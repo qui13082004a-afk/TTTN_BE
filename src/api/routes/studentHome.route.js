@@ -3,9 +3,24 @@ const router = express.Router();
 
 const studentHomeController = require("../controllers/studentHome.controller");
 const groupController = require("../controllers/groupJoin.controller");
+const { authenticateToken } = require("../middlewares/auth.middleware");
 
-router.get("/:id_sinh_vien", studentHomeController.getStudentHome);
-router.post("/join-code", groupController.joinByCode);
-router.post("/create-group", studentHomeController.createGroup);
+router.get(
+  "/",
+  authenticateToken,
+  studentHomeController.getStudentHome
+);
+
+router.post(
+  "/join-code",
+  authenticateToken,
+  groupController.joinByCode
+);
+
+router.post(
+  "/create-group",
+  authenticateToken,
+  studentHomeController.createGroup
+);
 
 module.exports = router;

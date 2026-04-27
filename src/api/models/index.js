@@ -119,6 +119,17 @@ SinhVien.hasMany(SinhVienLopHoc, {
   as: "sinh_vien_lop_hoc"
 });
 
+// 17. NhomHoc - ThanhVienNhom 
+NhomHoc.hasMany(ThanhVienNhom, {
+  foreignKey: "id_nhom",
+  as: "members"
+});
+
+NhomHoc.hasMany(ThanhVienNhom, {
+  foreignKey: "id_nhom",
+  as: "all_members"
+});
+
 module.exports = {
   sequelize,
   GiangVien,

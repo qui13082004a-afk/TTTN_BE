@@ -1,13 +1,19 @@
 const express = require("express");
 const router = express.Router();
 
-const dashboardController = require("../controllers/studentDashboard.controller");
+const controller = require("../controllers/studentSchedule.controller");
 const { authenticateToken } = require("../middlewares/auth.middleware");
 
 router.get(
   "/",
   authenticateToken,
-  dashboardController.getDashboard
+  controller.getSchedule
+);
+
+router.get(
+  "/late-tasks",
+  authenticateToken,
+  controller.countLateTasks
 );
 
 module.exports = router;

@@ -2,9 +2,9 @@ const profileService = require("../services/studentProfile.service");
 
 const getProfile = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id_sinh_vien = req.user.id;
 
-    const result = await profileService.getProfile(id);
+    const result = await profileService.getProfile(id_sinh_vien);
 
     return res.status(200).json(result);
   } catch (error) {
@@ -17,11 +17,11 @@ const getProfile = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const { id_sinh_vien, ho_ten, sdt, avatar } = req.body;
+    const id_sinh_vien = req.user.id;
+    const { sdt, avatar } = req.body;
 
     const result = await profileService.updateProfile({
       id_sinh_vien,
-      ho_ten,
       sdt,
       avatar
     });
@@ -37,7 +37,7 @@ const updateProfile = async (req, res) => {
 
 const uploadStudentAvatar = async (req, res) => {
   try {
-    const { id_sinh_vien } = req.body;
+    const id_sinh_vien = req.user.id;
 
     if (!req.file) {
       throw new Error("Vui lòng chọn ảnh");
@@ -59,7 +59,8 @@ const uploadStudentAvatar = async (req, res) => {
 
 const changePassword = async (req, res) => {
   try {
-    const { id_sinh_vien, mat_khau_cu, mat_khau_moi } = req.body;
+    const id_sinh_vien = req.user.id;
+    const { mat_khau_cu, mat_khau_moi } = req.body;
 
     const result = await profileService.changePassword(
       id_sinh_vien,
