@@ -28,9 +28,16 @@ const authenticateToken = async (req, res, next) => {
         return res.status(401).json({ message: "Phien dang nhap da het hieu luc, vui long dang nhap lai" });
       }
     }
+    //Chỉnh sửa do test api bên sinh viên không chạy được
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      role: decoded.role,
+      ...user
+    };
 
-    req.user = user;
     next();
+
   } catch (error) {
     console.error("JWT verification error:", error);
     return res.status(403).json({ message: "Token khong hop le" });

@@ -2,7 +2,13 @@ const bcrypt = require("bcrypt");
 const SinhVien = require("../models/sinh_vien.model");
 
 const getProfile = async (id) => {
-  const student = await SinhVien.findByPk(id);
+  //const student = await SinhVien.findByPk(id);
+
+  const student = await SinhVien.findOne({
+  where: {
+    id_sinh_vien: id
+  }
+});
 
   if (!student) {
     throw new Error("Không tìm thấy sinh viên");

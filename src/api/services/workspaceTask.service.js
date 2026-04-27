@@ -71,6 +71,35 @@ const createTask = async (id_nhom, data = {}) => {
   };
 };
 
+const getGroupProgress = async (id_nhom) => {
+  const totalTasks = await CongViec.count({
+    where: { id_nhom }
+  });
+
+  const completedTasks = await CongViec.count({
+    where: {
+      id_nhom,
+      trang_thai: "hoan_thanh"
+    }
+  });
+
+  const progress =
+    totalTasks === 0
+      ? 0
+      : Math.round((completedTasks / totalTasks) * 100);
+
+  return {
+    success: true,
+    data: {
+      id_nhom,
+      tong_task: totalTasks,
+      task_hoan_thanh: completedTasks,
+      tien_do_phan_tram: progress
+    }
+  };
+};
+
 module.exports = {
-  createTask
+  createTask,
+  getGroupProgress
 };
