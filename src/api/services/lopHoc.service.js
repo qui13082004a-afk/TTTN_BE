@@ -830,7 +830,7 @@ class LopHocService {
       return Number(existingCapacity.so_luong_toi_da);
     }
 
-    return Number(lopHoc.si_so_toi_da || 5);
+    return 5;
   }
 
   getDefaultGroupCapacity(lopHoc) {
