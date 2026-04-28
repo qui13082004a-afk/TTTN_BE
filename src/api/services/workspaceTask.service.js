@@ -2,6 +2,7 @@ const NhomHoc = require("../models/nhom_hoc.model");
 const LopHoc = require("../models/lop_hoc.model");
 const ThanhVienNhom = require("../models/thanh_vien_nhom.model");
 const CongViec = require("../models/cong_viec.model");
+const SinhVien = require("../models/sinh_vien.model");
 
 const createTask = async (id_nhom, data = {}) => {
   const {
@@ -155,8 +156,52 @@ const getGroupProgress = async (id_nhom) => {
   };
 };
 
+const getLecturerTasksByGroup = async (id_nhom, actor) => {
+  if (!actor || !["giangvien", "admin"].includes(actor.role)) {
+    throw new Error("Chi giang vien hoac admin moi co quyen xem cong viec cua nhom");
+  }
+
+  const group = await NhomHoc.findByPk(id_nhom);
+  if (!group) {
+    throw new Error("Khong tim thay nhom");
+  }
+
+  const lopHoc = await LopHoc.findByPk(group.id_lop);
+  if (!lopHoc) {
+    throw new Error("Khong tim thay lop hoc cua nhom");
+  }
+
+  if (
+    actor.role !== "admin" &&
+    Number(lopHoc.id_giang_vien) !== Number(actor.id_giang_vien)
+  ) {
+    throw new Error("Ban khong co quyen xem cong viec cua nhom nay");
+  }
+
+  const tasks = await CongViec.findAll({
+    where: { id_nhom },
+    include: [
+      {
+        model: SinhVien,
+        attributes: ["id_sinh_vien", "mssv", "ma_lop", "ho_ten", "email", "avatar"]
+      }
+    ],
+    order: [["id_cong_viec", "DESC"]]
+  });
+
+  return {
+    success: true,
+    data: {
+      id_nhom: group.id_nhom,
+      count: tasks.length,
+      tasks: tasks.map((task) => task.toJSON())
+    }
+  };
+};
+
 module.exports = {
   createTask,
   createLecturerTask,
-  getGroupProgress
+  getGroupProgress,
+  getLecturerTasksByGroup
 };

@@ -11,4 +11,11 @@ router.post(
   lecturerTaskController.createTaskForGroup
 );
 
+router.get(
+  "/groups/:id_nhom/tasks",
+  authenticateToken,
+  authorizeLecturer,
+  lecturerTaskController.getTasksByGroup
+);
+
 module.exports = router;
