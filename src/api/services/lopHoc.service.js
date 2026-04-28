@@ -699,6 +699,10 @@ class LopHocService {
       throw new Error("Email co trong danh sach nhung sinh vien chua co tai khoan. Vui long tao tai khoan cho sinh vien truoc.");
     }
 
+    if (lopHoc.ma_lop && student.ma_lop !== lopHoc.ma_lop) {
+      await student.update({ ma_lop: lopHoc.ma_lop });
+    }
+
     const [enrollment, created] = await SinhVienLopHoc.findOrCreate({
       where: {
         id_sinh_vien: student.id_sinh_vien,
@@ -716,6 +720,7 @@ class LopHocService {
       student: {
         id_sinh_vien: student.id_sinh_vien,
         mssv: student.mssv,
+        ma_lop: student.ma_lop,
         ho_ten: student.ho_ten,
         email: student.email,
       },

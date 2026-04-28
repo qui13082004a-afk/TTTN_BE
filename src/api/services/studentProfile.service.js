@@ -19,7 +19,9 @@ const getProfile = async (id) => {
     data: {
       id: student.id_sinh_vien,
       ho_ten: student.ho_ten,
-      ma_sinh_vien: student.ma_sinh_vien,
+      ma_sinh_vien: student.mssv,
+      mssv: student.mssv,
+      ma_lop: student.ma_lop,
       email: student.email,
       sdt: student.sdt,
       avatar: student.avatar
