@@ -1,2 +1,0 @@
-ALTER TABLE sinh_vien
-ADD COLUMN ma_lop VARCHAR(50) NULL AFTER mssv;
