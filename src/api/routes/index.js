@@ -20,6 +20,7 @@ const studentProfileRoute = require("./studentProfile.route");
 const studentScheduleRoute = require("./studentSchedule.route");
 const studentCourseRoute = require("./studentCourse.route");
 const workspaceRoute = require("./workspace.route");
+const lecturerTaskRoute = require("./lecturer_task.route");
 
 // Nhom API xac thuc va tai khoan
 router.use("/auth", authRoute);
@@ -57,5 +58,6 @@ router.use("/student-profile", studentProfileRoute);
 router.use("/student-schedule", studentScheduleRoute);
 router.use("/student-courses", studentCourseRoute);
 router.use("/workspace", workspaceRoute);
+router.use("/lecturer-tasks", lecturerTaskRoute);
 
 module.exports = router;
