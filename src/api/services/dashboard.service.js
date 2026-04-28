@@ -11,8 +11,18 @@ const lopHocService = require("./lopHoc.service");
 class DashboardService {
   async getLecturerSummary(actor, hoc_ky) {
     const lecturerId = this.getLecturerId(actor);
-    const currentHocKy = await this.resolveCurrentHocKy(lecturerId, hoc_ky);
-    const classWhere = this.buildLecturerClassWhere(lecturerId, currentHocKy);
+    const requestedHocKy = String(hoc_ky || "").trim() || null;
+    const classWhere = {
+      id_giang_vien: {
+        [Op.ne]: null,
+      },
+      is_deleted: false,
+    };
+
+    if (requestedHocKy) {
+      classWhere.hoc_ky = requestedHocKy;
+    }
+
     const now = new Date();
     const inThreeDays = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
 
@@ -58,14 +68,17 @@ class DashboardService {
       }
     }
 
-    const lopCanChotNhom = classes.filter((lopHoc) =>
-      lopHoc.trang_thai === "dang_mo" &&
-      lopHoc.han_chot_dang_ky &&
-      new Date(lopHoc.han_chot_dang_ky) < now
-    ).length;
+    const lopCanChotNhom = classes.filter((lopHoc) => {
+      if (lopHoc.trang_thai !== "dang_mo" || !lopHoc.han_chot_dang_ky) {
+        return false;
+      }
+
+      const registrationDeadline = new Date(lopHoc.han_chot_dang_ky);
+      return registrationDeadline >= now && registrationDeadline <= inThreeDays;
+    }).length;
 
     return {
-      hoc_ky: currentHocKy,
+      hoc_ky: requestedHocKy,
       lecturer: {
         id_giang_vien: lecturerId,
       },
