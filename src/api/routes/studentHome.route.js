@@ -17,10 +17,10 @@ router.post(
   groupController.joinByCode
 );
 
-router.post(
-  "/create-group",
-  authenticateToken,
-  studentHomeController.createGroup
-);
+// router.post(
+//   "/create-group",
+//   authenticateToken,
+//   studentHomeController.createGroup
+// );
 
 module.exports = router;

@@ -24,4 +24,10 @@ router.put("/tasks/:id_cong_viec/status", authenticateToken, taskStatusControlle
 
 router.get("/tasks/:id_cong_viec", authenticateToken, taskDetailController.getTaskDetail);
 
+router.get(
+  "/:id_nhom/progress",
+  authenticateToken,
+  taskController.getGroupProgress
+);
+
 module.exports = router;

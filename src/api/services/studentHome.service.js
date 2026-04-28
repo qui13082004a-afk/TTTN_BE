@@ -7,7 +7,13 @@ const GiangVien = require("../models/giang_vien.model");
 const ThanhVienNhom = require("../models/thanh_vien_nhom.model");
 
 const getStudentHome = async (id_sinh_vien) => {
-  const student = await SinhVien.findByPk(id_sinh_vien);
+  //const student = await SinhVien.findByPk(id_sinh_vien);
+
+const student = await SinhVien.findOne({
+  where: {
+    id_sinh_vien
+  }
+});
 
   if (!student) {
     throw new Error("Không tìm thấy sinh viên");
@@ -58,75 +64,75 @@ const getStudentHome = async (id_sinh_vien) => {
   };
 };
 
-const createGroup = async (id_sinh_vien, id_lop, ten_nhom) => {
-  const lop = await LopHoc.findByPk(id_lop);
+// const createGroup = async (id_sinh_vien, id_lop, ten_nhom) => {
+//   const lop = await LopHoc.findByPk(id_lop);
 
-  if (!lop) {
-    throw new Error("Không tìm thấy lớp học");
-  }
+//   if (!lop) {
+//     throw new Error("Không tìm thấy lớp học");
+//   }
 
-  if (lop.han_chot_dang_ky) {
-    const now = new Date();
-    const deadline = new Date(lop.han_chot_dang_ky);
+//   if (lop.han_chot_dang_ky) {
+//     const now = new Date();
+//     const deadline = new Date(lop.han_chot_dang_ky);
 
-    if (now > deadline) {
-      throw new Error("Lớp đã hết hạn tạo nhóm");
-    }
-  }
+//     if (now > deadline) {
+//       throw new Error("Lớp đã hết hạn tạo nhóm");
+//     }
+//   }
 
-  const inClass = await SinhVienLopHoc.findOne({
-    where: {
-      id_sinh_vien,
-      id_lop
-    }
-  });
+//   const inClass = await SinhVienLopHoc.findOne({
+//     where: {
+//       id_sinh_vien,
+//       id_lop
+//     }
+//   });
 
-  if (!inClass) {
-    throw new Error("Sinh viên không thuộc lớp này");
-  }
+//   if (!inClass) {
+//     throw new Error("Sinh viên không thuộc lớp này");
+//   }
 
-  const existed = await ThanhVienNhom.findOne({
-    include: [
-      {
-        model: NhomHoc,
-        where: { id_lop }
-      }
-    ],
-    where: { id_sinh_vien }
-  });
+//   const existed = await ThanhVienNhom.findOne({
+//     include: [
+//       {
+//         model: NhomHoc,
+//         where: { id_lop }
+//       }
+//     ],
+//     where: { id_sinh_vien }
+//   });
 
-  if (existed) {
-    throw new Error("Sinh viên đã có nhóm trong lớp này");
-  }
+//   if (existed) {
+//     throw new Error("Sinh viên đã có nhóm trong lớp này");
+//   }
 
-  const totalGroup = await NhomHoc.count({
-    where: { id_lop }
-  });
+//   const totalGroup = await NhomHoc.count({
+//     where: { id_lop }
+//   });
 
-  const ma_nhom = String(totalGroup + 1).padStart(2, "0");
+//   const ma_nhom = String(totalGroup + 1).padStart(2, "0");
 
-  const newGroup = await NhomHoc.create({
-    id_lop,
-    ten_nhom,
-    ma_nhom,
-    id_nhom_truong: id_sinh_vien
-  });
+//   const newGroup = await NhomHoc.create({
+//     id_lop,
+//     ten_nhom,
+//     ma_nhom,
+//     id_nhom_truong: id_sinh_vien
+//   });
 
-  await ThanhVienNhom.create({
-    id_nhom: newGroup.id_nhom,
-    id_sinh_vien,
-    vai_tro_noi_bo: "truong_nhom",
-    ngay_gia_nhap: new Date()
-  });
+//   await ThanhVienNhom.create({
+//     id_nhom: newGroup.id_nhom,
+//     id_sinh_vien,
+//     vai_tro_noi_bo: "truong_nhom",
+//     ngay_gia_nhap: new Date()
+//   });
 
-  return {
-    success: true,
-    message: "Tạo nhóm thành công",
-    data: newGroup
-  };
-};
+//   return {
+//     success: true,
+//     message: "Tạo nhóm thành công",
+//     data: newGroup
+//   };
+// };
 
 module.exports = {
-  getStudentHome,
-  createGroup
+  getStudentHome
+  //createGroup
 };
