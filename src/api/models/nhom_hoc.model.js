@@ -8,7 +8,7 @@ const NhomHoc = sequelize.define("nhom_hoc", {
     primaryKey: true,
     allowNull: false,
   },
-  ma_nhom: { type: DataTypes.STRING(20) },
+  ma_nhom: { type: DataTypes.STRING(100) },
   id_lop: { type: DataTypes.INTEGER },
   id_nhom_truong: { type: DataTypes.INTEGER },
   ten_nhom: { type: DataTypes.STRING(100) },
