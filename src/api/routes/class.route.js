@@ -57,6 +57,9 @@ router.post("/:id/groups", authenticateToken, authorizeLecturer, classController
 // Gan thu cong mot sinh vien vao mot nhom cu the, co chan truong hop nhom day
 router.post("/:id/groups/:groupId/members", authenticateToken, authorizeLecturer, classController.assignStudentToGroup);
 
+// Chon nhom truong cho mot nhom
+router.patch("/:id/groups/:groupId/leader", authenticateToken, authorizeLecturer, classController.assignGroupLeader);
+
 // Lay danh sach sinh vien trong lop nhung chua co nhom
 router.get("/:id/ungrouped-students", authenticateToken, authorizeLecturer, classController.getUngroupedStudentsByClassId);
 
