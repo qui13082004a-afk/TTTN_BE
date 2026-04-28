@@ -9,6 +9,7 @@ const SinhVien = sequelize.define("sinh_vien", {
     allowNull: false,
   },
   mssv: { type: DataTypes.STRING(50), unique: true },
+  ma_lop: { type: DataTypes.STRING(50) },
   ho_ten: { type: DataTypes.STRING(255), allowNull: false },
   email: { type: DataTypes.STRING(100), allowNull: false, unique: true },
   mat_khau: { type: DataTypes.STRING(255), allowNull: false },

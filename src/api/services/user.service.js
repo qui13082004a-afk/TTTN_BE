@@ -22,6 +22,7 @@ class UserService {
       attributes: [
         "id_sinh_vien",
         "mssv",
+        "ma_lop",
         "ho_ten",
         "email",
         "sdt",

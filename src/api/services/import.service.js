@@ -51,6 +51,7 @@ class ImportService {
       studentMap,
       existingClassStudentIds,
       id_lop: lopHoc.id_lop,
+      ma_lop: lopHoc.ma_lop,
       defaultPassword,
       warnings,
     });
@@ -149,6 +150,7 @@ class ImportService {
     studentMap,
     existingClassStudentIds,
     id_lop,
+    ma_lop,
     defaultPassword,
     warnings,
   }) {
@@ -168,6 +170,10 @@ class ImportService {
 
         createdAccounts++;
         this.addStudentToMap(studentMap, student);
+      }
+
+      if (ma_lop && student.ma_lop !== ma_lop) {
+        await student.update({ ma_lop });
       }
 
       if (existingClassStudentIds.has(student.id_sinh_vien)) {
@@ -205,6 +211,7 @@ class ImportService {
     try {
       return await sinhVienRepo.create({
         mssv: row.mssv || null,
+        ma_lop: row.ma_lop || null,
         ho_ten: row.ho_ten,
         email,
         mat_khau: defaultPassword,
@@ -237,6 +244,11 @@ class ImportService {
     return {
       ho_ten: String(fullName || "").trim(),
       email: String(normalizedRow.email || "").trim().toLowerCase(),
+      ma_lop: String(
+        normalizedRow.malop ||
+        normalizedRow.lop ||
+        ""
+      ).trim(),
       mssv: String(
         normalizedRow.mssv ||
         normalizedRow.masinhvien ||
