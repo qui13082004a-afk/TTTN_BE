@@ -1,5 +1,4 @@
 const { Op } = require("sequelize");
-const XLSX = require("xlsx");
 const lopHocRepo = require("../repositories/lopHoc.repository");
 const sinhVienRepo = require("../repositories/sinhVien.repository");
 const {
@@ -728,76 +727,6 @@ class LopHocService {
     };
   }
 
-  async importStudentsToClassFromFile({ id_lop, filePath, actor }) {
-    if (!id_lop) {
-      throw new Error("ID lop khong duoc de trong");
-    }
-
-    const lopHoc = await LopHoc.findByPk(id_lop);
-    if (!lopHoc || lopHoc.is_deleted) {
-      throw new Error("Lop hoc khong ton tai");
-    }
-
-    this.ensureLecturerOwnsClass(lopHoc, actor);
-
-    const workbook = XLSX.readFile(filePath, { raw: false });
-    const sheetName = workbook.SheetNames[0];
-    const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
-      defval: "",
-    });
-
-    if (data.length === 0) {
-      throw new Error("File danh sach sinh vien dang rong");
-    }
-
-    let inserted = 0;
-    const warnings = [];
-
-    for (const [index, row] of data.entries()) {
-      const lineNumber = index + 2;
-      const email = this.extractEmailFromRow(row);
-
-      if (!email) {
-        warnings.push(`Dong ${lineNumber} chua co email`);
-        continue;
-      }
-
-      const student = await sinhVienRepo.findByEmail(email);
-      if (!student) {
-        warnings.push(`Dong ${lineNumber} co email ${email} nhung sinh vien chua co tai khoan trong he thong. Vui long giang vien tao tai khoan cho sinh vien truoc.`);
-        continue;
-      }
-
-      const [, created] = await SinhVienLopHoc.findOrCreate({
-        where: {
-          id_sinh_vien: student.id_sinh_vien,
-          id_lop: lopHoc.id_lop,
-        },
-        defaults: {
-          id_sinh_vien: student.id_sinh_vien,
-          id_lop: lopHoc.id_lop,
-        },
-      });
-
-      if (!created) {
-        warnings.push(`Dong ${lineNumber} voi email ${email} da co trong lop`);
-        continue;
-      }
-
-      inserted++;
-    }
-
-    return {
-      inserted,
-      warnings,
-      class: {
-        id_lop: lopHoc.id_lop,
-        ma_lop: lopHoc.ma_lop,
-        ten_lop: lopHoc.ten_lop,
-      },
-    };
-  }
-
   async getOwnedClass(id_lop, actor) {
     const lopHoc = await LopHoc.findByPk(id_lop);
     if (!lopHoc || lopHoc.is_deleted) {
@@ -912,25 +841,6 @@ class LopHocService {
   generateGroupCode(lopHoc, nextIndex) {
     const suffix = String(nextIndex).padStart(2, "0");
     return lopHoc.ma_lop ? `${lopHoc.ma_lop}-N${suffix}` : `LOP${lopHoc.id_lop}-N${suffix}`;
-  }
-
-  extractEmailFromRow(row) {
-    for (const [key, value] of Object.entries(row)) {
-      if (this.normalizeHeader(key) === "email") {
-        return String(value || "").trim().toLowerCase();
-      }
-    }
-
-    return "";
-  }
-
-  normalizeHeader(header) {
-    return String(header || "")
-      .trim()
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]/g, "");
   }
 
   async buildClassCardData(lopHoc) {

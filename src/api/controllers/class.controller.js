@@ -1,5 +1,6 @@
 const fs = require("fs/promises");
 const lopHocService = require("../services/lopHoc.service");
+const importService = require("../services/import.service");
 const groupChangeRequestService = require("../services/groupChangeRequest.service");
 
 exports.createClass = async (req, res) => {
@@ -352,7 +353,7 @@ exports.importStudentsToClass = async (req, res) => {
       return res.status(400).json({ message: "Chua upload file danh sach sinh vien" });
     }
 
-    const result = await lopHocService.importStudentsToClassFromFile({
+    const result = await importService.importStudentsToClassFromFile({
       id_lop: Number(id),
       filePath: req.file.path,
       actor: req.user,
@@ -361,6 +362,7 @@ exports.importStudentsToClass = async (req, res) => {
     res.json({
       message: `Da them ${result.inserted} sinh vien vao lop`,
       class: result.class,
+      createdAccounts: result.createdAccounts,
       warnings: result.warnings,
     });
   } catch (error) {
