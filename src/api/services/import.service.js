@@ -172,8 +172,10 @@ class ImportService {
         this.addStudentToMap(studentMap, student);
       }
 
-      if (ma_lop && student.ma_lop !== ma_lop) {
-        await student.update({ ma_lop });
+      const studentClassCode = row.ma_lop || ma_lop || null;
+
+      if (studentClassCode && student.ma_lop !== studentClassCode) {
+        await student.update({ ma_lop: studentClassCode });
       }
 
       if (existingClassStudentIds.has(student.id_sinh_vien)) {
@@ -246,6 +248,8 @@ class ImportService {
       email: String(normalizedRow.email || "").trim().toLowerCase(),
       ma_lop: String(
         normalizedRow.malop ||
+        normalizedRow.malophoc ||
+        normalizedRow.classcode ||
         normalizedRow.lop ||
         ""
       ).trim(),
