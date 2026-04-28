@@ -471,7 +471,7 @@ class LopHocService {
       throw new Error("Lop hoc chua qua han dang ky nen khong the phan nhom tu dong");
     }
 
-    if (lopHoc.trang_thai !== "dang_mo") {
+    if (lopHoc.trang_thai !== "het_han") {
       throw new Error("Chi co the phan nhom tu dong voi lop dang mo");
     }
 
