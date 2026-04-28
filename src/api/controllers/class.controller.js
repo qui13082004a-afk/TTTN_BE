@@ -295,6 +295,27 @@ exports.assignStudentToGroup = async (req, res) => {
   }
 };
 
+exports.assignGroupLeader = async (req, res) => {
+  try {
+    const { id, groupId } = req.params;
+    const { id_sinh_vien } = req.body;
+
+    const result = await lopHocService.assignGroupLeader({
+      id_lop: Number(id),
+      id_nhom: Number(groupId),
+      id_sinh_vien: Number(id_sinh_vien),
+      actor: req.user,
+    });
+
+    res.json({
+      message: "Chon nhom truong thanh cong",
+      ...result,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 exports.getUngroupedStudentsByClassId = async (req, res) => {
   try {
     const { id } = req.params;

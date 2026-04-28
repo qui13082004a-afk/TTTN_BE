@@ -448,6 +448,72 @@ class LopHocService {
     };
   }
 
+  async assignGroupLeader({ id_lop, id_nhom, id_sinh_vien, actor }) {
+    if (!id_lop || !id_nhom || !id_sinh_vien) {
+      throw new Error("ID lop, ID nhom va ID sinh vien la bat buoc");
+    }
+
+    const lopHoc = await this.getOwnedClass(id_lop, actor);
+    const group = await NhomHoc.findByPk(id_nhom);
+
+    if (!group || Number(group.id_lop) !== Number(lopHoc.id_lop)) {
+      throw new Error("Nhom hoc khong thuoc lop nay");
+    }
+
+    const membership = await ThanhVienNhom.findOne({
+      where: {
+        id_nhom: group.id_nhom,
+        id_sinh_vien,
+      },
+    });
+
+    if (!membership) {
+      throw new Error("Sinh vien khong thuoc nhom nay");
+    }
+
+    await sequelize.transaction(async (transaction) => {
+      await ThanhVienNhom.update(
+        { vai_tro_noi_bo: "thanh_vien" },
+        {
+          where: {
+            id_nhom: group.id_nhom,
+            vai_tro_noi_bo: "truong_nhom",
+          },
+          transaction,
+        }
+      );
+
+      await membership.update(
+        { vai_tro_noi_bo: "truong_nhom" },
+        { transaction }
+      );
+
+      await group.update(
+        { id_nhom_truong: id_sinh_vien },
+        { transaction }
+      );
+    });
+
+    const student = await SinhVien.findByPk(id_sinh_vien, {
+      attributes: ["id_sinh_vien", "mssv", "ma_lop", "ho_ten", "email"],
+    });
+
+    return {
+      class: {
+        id_lop: lopHoc.id_lop,
+        ma_lop: lopHoc.ma_lop,
+        ten_lop: lopHoc.ten_lop,
+      },
+      group: {
+        id_nhom: group.id_nhom,
+        ma_nhom: group.ma_nhom,
+        ten_nhom: group.ten_nhom,
+        id_nhom_truong: id_sinh_vien,
+      },
+      leader: student ? student.toJSON() : { id_sinh_vien },
+    };
+  }
+
   async getUngroupedStudentsByClassId(id_lop, actor) {
     const lopHoc = await this.getOwnedClass(id_lop, actor);
     const students = await this.findUngroupedStudentsByClassId(lopHoc.id_lop);
