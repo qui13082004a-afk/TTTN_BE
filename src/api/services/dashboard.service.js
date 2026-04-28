@@ -13,7 +13,7 @@ class DashboardService {
     const lecturerId = this.getLecturerId(actor);
     const requestedHocKy = String(hoc_ky || "").trim() || null;
     const classWhere = {
-      id_giang_vien: {
+      id_mon_hoc: {
         [Op.ne]: null,
       },
       is_deleted: false,
