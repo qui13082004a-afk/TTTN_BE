@@ -138,7 +138,7 @@ class LopHocService {
       include: [
         {
           model: SinhVien,
-          attributes: ["id_sinh_vien", "mssv", "ho_ten", "email", "trang_thai"],
+          attributes: ["id_sinh_vien", "mssv", "ma_lop", "ho_ten", "email", "trang_thai"],
           through: { attributes: [] },
         },
       ],
@@ -198,6 +198,7 @@ class LopHocService {
 
           return {
             ...studentJson,
+            ma_lop: studentJson.ma_lop || lopHoc.ma_lop,
             group: group
               ? {
                 id_nhom: group.id_nhom,
