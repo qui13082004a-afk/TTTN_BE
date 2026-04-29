@@ -19,6 +19,58 @@ const getWorkspaceInfo = async (req, res) => {
   }
 };
 
+const getMessageCount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await workspaceService.getMessageCount(userId);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+const getMessages = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await workspaceService.getMessages(userId);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+const revokeMessage = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const notificationId = req.params.id_tin_nhan;
+
+    const result = await workspaceService.revokeMessage(
+      userId,
+      notificationId
+    );
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
-  getWorkspaceInfo
+  getWorkspaceInfo,
+  getMessageCount,
+  getMessages,
+  revokeMessage
 };
