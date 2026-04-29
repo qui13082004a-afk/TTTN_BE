@@ -2,6 +2,7 @@ const NhomHoc = require("../models/nhom_hoc.model");
 const LopHoc = require("../models/lop_hoc.model");
 const ThanhVienNhom = require("../models/thanh_vien_nhom.model");
 const SinhVien = require("../models/sinh_vien.model");
+const TinNhan = require("../models/tin_nhan.model");
 
 const getWorkspaceInfo = async (id_nhom, id_sinh_vien) => {
   const group = await NhomHoc.findOne({
@@ -77,6 +78,62 @@ const getWorkspaceInfo = async (id_nhom, id_sinh_vien) => {
   };
 };
 
+const getMessageCount = async (userId) => {
+  const count = await TinNhan.count({
+    where: {
+      id_nguoi_gui: userId,
+      da_thu_hoi: false
+    }
+  });
+
+  return {
+    success: true,
+    data: {
+      total_messages: count
+    }
+  };
+};
+
+const getMessages = async (userId) => {
+  const list = await TinNhan.findAll({
+    where: {
+      id_nguoi_gui: userId,
+      da_thu_hoi: false
+    },
+    order: [["thoi_gian_gui", "DESC"]]
+  });
+
+  return {
+    success: true,
+    data: list
+  };
+};
+
+const revokeMessage = async (userId, notificationId) => {
+  const notification = await TinNhan.findOne({
+    where: {
+      id_tin_nhan: notificationId,
+      id_nguoi_gui: userId
+    }
+  });
+
+  if (!notification) {
+    throw new Error("Không tìm thấy tin nhắn");
+  }
+
+  await notification.update({
+    da_thu_hoi: true
+  });
+
+  return {
+    success: true,
+    message: "Đã thu hồi tin nhắn"
+  };
+};
+
 module.exports = {
-  getWorkspaceInfo
+  getWorkspaceInfo,
+  getMessageCount,
+  getMessages,
+  revokeMessage
 };
