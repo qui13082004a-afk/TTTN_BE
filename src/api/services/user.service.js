@@ -92,6 +92,10 @@ class UserService {
       return null;
     }
 
+    // if (!normalizedEmail.endsWith("@student.stu.edu.vn")) {
+    //   throw new Error("Email sinh viên không hợp lệ");
+    // }
+
     const lecturer = await GiangVien.findOne({ where: { email: normalizedEmail } });
     if (lecturer) {
       return {

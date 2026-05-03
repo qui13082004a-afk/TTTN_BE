@@ -12,4 +12,18 @@ router.patch("/:requestId/approve", authenticateToken, groupChangeRequestControl
 // [Giang vien] Tu choi yeu cau chuyen nhom dang cho duyet, giu nguyen nhom cu cua sinh vien
 router.patch("/:requestId/reject", authenticateToken, groupChangeRequestController.rejectRequest);
 
+// Sinh viên xem request hiện tại
+router.get(
+  "/me",
+  authenticateToken,
+  groupChangeRequestController.getMyRequest
+);
+
+// Sinh viên hủy request
+router.delete(
+  "/:requestId",
+  authenticateToken,
+  groupChangeRequestController.cancelRequest
+);
+
 module.exports = router;

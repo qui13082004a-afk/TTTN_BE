@@ -20,7 +20,10 @@ NhomHoc.belongsTo(LopHoc, { foreignKey: "id_lop", as: "lop_hoc" });
 
 // 3. Nhóm học - Công việc (1-n)
 NhomHoc.hasMany(CongViec, { foreignKey: "id_nhom" });
-CongViec.belongsTo(NhomHoc, { foreignKey: "id_nhom" });
+CongViec.belongsTo(NhomHoc, {
+  foreignKey: "id_nhom",
+  as: "nhom_hoc"
+});
 
 // 4. Sinh viên - Công việc (1-n)
 SinhVien.hasMany(CongViec, { foreignKey: "id_sinh_vien_phu_trach" });
@@ -63,8 +66,15 @@ NhomHoc.belongsToMany(SinhVien, {
 });
 
 // 10. Nhóm học - Thành viên nhóm (1-n)
-NhomHoc.hasMany(ThanhVienNhom, { foreignKey: "id_nhom" });
-ThanhVienNhom.belongsTo(NhomHoc, { foreignKey: "id_nhom" });
+NhomHoc.hasMany(ThanhVienNhom, {
+  foreignKey: "id_nhom",
+  as: "thanh_vien"
+});
+
+ThanhVienNhom.belongsTo(NhomHoc, {
+  foreignKey: "id_nhom",
+  as: "nhom_hoc"
+});
 
 // 11. Sinh viên - Thành viên nhóm (1-n)
 SinhVien.hasMany(ThanhVienNhom, { foreignKey: "id_sinh_vien" });
@@ -117,17 +127,6 @@ SinhVienLopHoc.belongsTo(SinhVien, {
 SinhVien.hasMany(SinhVienLopHoc, {
   foreignKey: "id_sinh_vien",
   as: "sinh_vien_lop_hoc"
-});
-
-// 17. NhomHoc - ThanhVienNhom 
-NhomHoc.hasMany(ThanhVienNhom, {
-  foreignKey: "id_nhom",
-  as: "members"
-});
-
-NhomHoc.hasMany(ThanhVienNhom, {
-  foreignKey: "id_nhom",
-  as: "all_members"
 });
 
 module.exports = {

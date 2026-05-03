@@ -6,13 +6,13 @@ const NhatKy = require("../models/nhat_ky.model");
 const TinNhan = require("../models/tin_nhan.model");
 const SinhVien = require("../models/sinh_vien.model");
 
-const getDashboard = async (id_sinh_vien) => {
+const getDashboard = async (id_sinh_vien, lastSeenMessageId) => {
   const totalGroups = await ThanhVienNhom.count({
     where: { id_sinh_vien }
   });
 
   const totalCourses = await SinhVienLopHoc.count({
-    where: { id_sinh_vien }
+    where: { id_sinh_vien, trang_thai: "dang_hoc" }
   });
 
   const now = new Date();
@@ -44,7 +44,7 @@ const getDashboard = async (id_sinh_vien) => {
   include: [
     {
       model: CongViec,
-      required: false,
+      required: true,
       where: {
         id_sinh_vien_phu_trach: id_sinh_vien
       }
@@ -54,8 +54,20 @@ const getDashboard = async (id_sinh_vien) => {
   limit: 5
 });
 
-  const notifications = await TinNhan.findAll({
+// Lấy danh sách nhóm
+const myGroups = await ThanhVienNhom.findAll({
+  where: { id_sinh_vien },
+  attributes: ["id_nhom"]
+});
+
+const groupIds = myGroups.map(g => g.id_nhom);
+
+// Lấy tin nhắn trong nhóm
+const notifications = await TinNhan.findAll({
   where: {
+    id_nhom: {
+      [Op.in]: groupIds
+    },
     id_nguoi_gui: {
       [Op.ne]: id_sinh_vien
     }
@@ -64,7 +76,20 @@ const getDashboard = async (id_sinh_vien) => {
   limit: 5
 });
 
-  const unreadCount = notifications.length;
+  const unreadCount = await TinNhan.count({
+  where: {
+    id_nhom: {
+      [Op.in]: groupIds
+    },
+    id_nguoi_gui: {
+      [Op.ne]: id_sinh_vien
+    },
+    id_tin_nhan: {
+      [Op.gt]: lastSeenMessageId
+    },
+    da_thu_hoi: 0
+  }
+});
 
   const student = await SinhVien.findByPk(id_sinh_vien);
 

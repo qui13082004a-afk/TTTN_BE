@@ -5,7 +5,8 @@ const GiangVien = require("../models/giang_vien.model");
 const getMyCourses = async (id_sinh_vien) => {
   const courses = await SinhVienLopHoc.findAll({
     where: {
-      id_sinh_vien
+      id_sinh_vien,
+      trang_thai: "dang_hoc"
     },
     include: [
       {
