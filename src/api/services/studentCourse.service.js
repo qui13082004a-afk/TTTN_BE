@@ -28,13 +28,26 @@ const getMyCourses = async (id_sinh_vien) => {
     ]
   });
 
+const fakeLecturers = [
+  "Nguyễn Văn A",
+  "Trần Thị B",
+  "Lê Văn C",
+  "Phạm Văn D",
+  "Hoàng Thị E"
+];
+
+const getRandomLecturer = () => {
+  return fakeLecturers[Math.floor(Math.random() * fakeLecturers.length)];
+};
+
   return {
     success: true,
     data: courses.map(item => ({
       id_lop: item.lop_hoc.id_lop,
       ma_mon: item.lop_hoc.ma_lop,
       ten_mon: item.lop_hoc.ten_lop,
-      giang_vien: item.lop_hoc.GiangVien?.ho_ten || null,
+      //giang_vien: item.lop_hoc.GiangVien?.ho_ten || null,
+      giang_vien: getRandomLecturer(),//Cho ten giang bien random
       han_chot_dang_ky: item.lop_hoc.han_chot_dang_ky
     }))
   };

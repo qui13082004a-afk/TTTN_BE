@@ -4,23 +4,19 @@ const NhomHoc = require("../models/nhom_hoc.model");
 const ThanhVienNhom = require("../models/thanh_vien_nhom.model");
 const GiangVien = require("../models/giang_vien.model");
 
-const getGroups = async (studentId, keyword = "") => {
-  const whereCondition = keyword
-  ? {
-      [Op.or]: [
-        {
-          ten_nhom: {
-            [Op.like]: `%${keyword}%`
-          }
-        },
-        {
-          "$lop_hoc.ten_lop$": {
-            [Op.like]: `%${keyword}%`
-          }
-        }
-      ]
-    }
-  : {};
+const getGroups = async (studentId, keyword = "", id_lop = null) => {
+  const whereCondition = {};
+
+if (id_lop) {
+  whereCondition.id_lop = id_lop;
+}
+
+if (keyword) {
+  whereCondition[Op.or] = [
+    { ten_nhom: { [Op.like]: `%${keyword}%` } },
+    { "$lop_hoc.ten_lop$": { [Op.like]: `%${keyword}%` } }
+  ];
+}
 
   const groups = await NhomHoc.findAll({
     where: whereCondition,
@@ -28,21 +24,7 @@ const getGroups = async (studentId, keyword = "") => {
       {
         model: LopHoc,
         as: "lop_hoc",
-        attributes: ["ten_lop", "han_chot_dang_ky"],
-        include: [
-          {
-            model: GiangVien,
-            attributes: ["ho_ten"]
-          }
-        ]
-      },
-      {
-        model: ThanhVienNhom,
-        as: "thanh_vien",
-        attributes: [],
-        where: {
-          id_sinh_vien: studentId
-        }
+        attributes: ["ten_lop", "han_chot_dang_ky"]
       }
     ]
   });
@@ -65,10 +47,9 @@ const getGroups = async (studentId, keyword = "") => {
 
       return {
         id_nhom: group.id_nhom,
+        id_lop: group.id_lop, 
         ten_nhom: group.ten_nhom,
         ten_mon_hoc: group.lop_hoc?.ten_lop || "",
-        ten_giang_vien:
-          group.lop_hoc?.GiangVien?.ho_ten || null,
         so_thanh_vien: totalMembers,
         so_luong_toi_da: group.so_luong_toi_da,
         trang_thai

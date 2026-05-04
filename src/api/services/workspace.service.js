@@ -51,7 +51,7 @@ const getWorkspaceInfo = async (id_nhom, id_sinh_vien) => {
         {
           key: "create_task",
           label: "Tạo task mới",
-          allow: true
+          allow: isLeader
         },
         {
           key: "task_list",
@@ -78,6 +78,43 @@ const getWorkspaceInfo = async (id_nhom, id_sinh_vien) => {
   };
 };
 
+const sendMessage = async ({ id_nhom, id_nguoi_gui, noi_dung }) => {
+  if (!id_nhom) throw new Error("Thiếu id_nhom");
+if (!noi_dung || noi_dung.trim() === "") {
+  throw new Error("Nội dung không được để trống");
+}
+
+const group = await NhomHoc.findByPk(id_nhom);
+if (!group) {
+  throw new Error("Nhóm không tồn tại");
+}
+
+  const member = await ThanhVienNhom.findOne({
+  where: {
+    id_nhom,
+    id_sinh_vien: id_nguoi_gui
+  }
+});
+
+if (!member) {
+  throw new Error("Bạn không thuộc nhóm này");
+}
+
+  const message = await TinNhan.create({
+    id_nhom,
+    id_nguoi_gui,
+    noi_dung: noi_dung.trim(),
+    da_thu_hoi: false,
+    thoi_gian_gui: new Date()
+  });
+
+  return {
+    success: true,
+    message: "Gửi tin nhắn thành công",
+    data: message
+  };
+};
+
 const getMessageCount = async (userId) => {
   const count = await TinNhan.count({
     where: {
@@ -94,14 +131,31 @@ const getMessageCount = async (userId) => {
   };
 };
 
-const getMessages = async (userId) => {
-  const list = await TinNhan.findAll({
-    where: {
-      id_nguoi_gui: userId,
-      da_thu_hoi: false
-    },
-    order: [["thoi_gian_gui", "DESC"]]
-  });
+const getMessages = async (id_nhom, id_sinh_vien) => {
+  const member = await ThanhVienNhom.findOne({
+  where: {
+    id_nhom,
+    id_sinh_vien
+  }
+});
+
+if (!member) {
+  throw new Error("Bạn không thuộc nhóm này");
+}
+
+const list = await TinNhan.findAll({
+  where: {
+    id_nhom,
+    da_thu_hoi: false
+  },
+  include: [
+    {
+      model: SinhVien,
+      attributes: ["id_sinh_vien", "ho_ten", "avatar"]
+    }
+  ],
+  order: [["thoi_gian_gui", "ASC"]]
+});
 
   return {
     success: true,
@@ -121,6 +175,10 @@ const revokeMessage = async (userId, notificationId) => {
     throw new Error("Không tìm thấy tin nhắn");
   }
 
+  if (notification.da_thu_hoi) {
+  throw new Error("Tin nhắn đã được thu hồi trước đó");
+}
+
   await notification.update({
     da_thu_hoi: true
   });
@@ -133,6 +191,7 @@ const revokeMessage = async (userId, notificationId) => {
 
 module.exports = {
   getWorkspaceInfo,
+  sendMessage,
   getMessageCount,
   getMessages,
   revokeMessage

@@ -4,6 +4,10 @@ const ThanhVienNhom = require("../models/thanh_vien_nhom.model");
 const removeMember = async (id_nhom, id_thanh_vien, id_sinh_vien) => {
   const group = await NhomHoc.findByPk(id_nhom);
 
+if (!id_thanh_vien) {
+  throw new Error("Thiếu id thành viên");
+}
+
   if (!group) {
     throw new Error("Không tìm thấy nhóm");
   }

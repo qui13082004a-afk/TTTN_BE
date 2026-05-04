@@ -1,7 +1,17 @@
 const CongViec = require("../models/cong_viec.model");
 const SinhVien = require("../models/sinh_vien.model");
+const ThanhVienNhom = require("../models/thanh_vien_nhom.model");
 
-const getTasksByGroup = async (id_nhom) => {
+const getTasksByGroup = async (id_nhom, id_sinh_vien) => {
+
+  const member = await ThanhVienNhom.findOne({
+    where: { id_nhom, id_sinh_vien }
+  });
+
+  if (!member) {
+    throw new Error("Bạn không thuộc nhóm này");
+  }
+
   const tasks = await CongViec.findAll({
     where: { id_nhom },
     include: [

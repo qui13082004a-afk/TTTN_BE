@@ -4,7 +4,10 @@ const getTaskDetail = async (req, res) => {
   try {
     const { id_cong_viec } = req.params;
 
-    const result = await taskDetailService.getTaskDetail(id_cong_viec);
+    const result = await taskDetailService.getTaskDetail(
+      id_cong_viec,
+      req.user.id_sinh_vien
+    );
 
     return res.status(200).json(result);
   } catch (error) {

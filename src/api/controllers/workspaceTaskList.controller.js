@@ -3,7 +3,7 @@ const taskListService = require("../services/workspaceTaskList.service");
 const getTasksByGroup = async (req, res) => {
   try {
     const { id_nhom } = req.params;
-    const id_sinh_vien = req.user.id;
+    const id_sinh_vien = req.user.id_sinh_vien;
 
     const result = await taskListService.getTasksByGroup(
       id_nhom,

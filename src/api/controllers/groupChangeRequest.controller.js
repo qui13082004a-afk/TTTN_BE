@@ -2,15 +2,6 @@ const groupChangeRequestService = require("../services/groupChangeRequest.servic
 
 exports.createRequest = async (req, res) => {
   try {
-
-    const targetCount = await ThanhVienNhom.count({
-      where: { id_nhom: targetGroupId }
-    });
-
-    if (targetCount >= Number(targetGroup.so_luong_toi_da || 0)) {
-      throw new Error("Nhom da day");
-    }
-
     const result = await groupChangeRequestService.createRequest(req.user, req.body);
     res.status(201).json({
       message: "Gui yeu cau chuyen nhom thanh cong",

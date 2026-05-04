@@ -3,7 +3,7 @@ const removeService = require("../services/workspaceRemoveMember.service");
 const removeMember = async (req, res) => {
   try {
     const { id_nhom, id_thanh_vien } = req.params;
-    const id_sinh_vien = req.user.id;
+    const id_sinh_vien = req.user.id_sinh_vien;
 
     const result = await removeService.removeMember(
       id_nhom,

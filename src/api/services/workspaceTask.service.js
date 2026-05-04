@@ -21,9 +21,9 @@ const createTask = async (id_nhom, data = {}) => {
     throw new Error("Thiếu người phụ trách");
   }
 
-  if (!ten_cong_viec) {
-    throw new Error("Thiếu tên công việc");
-  }
+  if (!ten_cong_viec || ten_cong_viec.trim() === "") {
+  throw new Error("Tên công việc không được để trống");
+}
 
   const group = await NhomHoc.findByPk(id_nhom);
 

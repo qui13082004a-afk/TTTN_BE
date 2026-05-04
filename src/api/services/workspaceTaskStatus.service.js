@@ -12,11 +12,13 @@ const updateTaskStatus = async (id_cong_viec, data) => {
     throw new Error("Trạng thái không hợp lệ");
   }
 
-  const task = await CongViec.findByPk(id_cong_viec);
+const task = await CongViec.findByPk(id_cong_viec);
 
-  if (!task) {
-    throw new Error("Không tìm thấy công việc");
-  }
+if (!task) throw new Error("Không tìm thấy công việc");
+
+if (task.id_sinh_vien_phu_trach !== id_sinh_vien) {
+  throw new Error("Chỉ người phụ trách mới được cập nhật trạng thái");
+}
 
   const member = await ThanhVienNhom.findOne({
     where: {

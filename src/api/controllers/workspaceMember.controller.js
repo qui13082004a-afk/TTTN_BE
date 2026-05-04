@@ -3,7 +3,7 @@ const memberService = require("../services/workspaceMember.service");
 const getGroupMembers = async (req, res) => {
   try {
     const { id_nhom } = req.params;
-    const id_sinh_vien = req.user.id;
+    const id_sinh_vien = req.user.id_sinh_vien;
 
     const result = await memberService.getGroupMembers(
       id_nhom,
