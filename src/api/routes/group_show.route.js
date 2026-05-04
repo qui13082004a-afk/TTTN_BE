@@ -2,8 +2,12 @@ const express = require("express");
 const router = express.Router();
 
 const groupController = require("../controllers/groupShow.controller");
-const authMiddleware = require("../middlewares/auth.middleware");
+const { authenticateToken } = require("../middlewares/auth.middleware");
 
-router.get("/", groupController.getGroups);
+router.get(
+  "/",
+  authenticateToken,
+  groupController.getGroups
+);
 
 module.exports = router;

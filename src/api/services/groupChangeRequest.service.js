@@ -39,6 +39,14 @@ class GroupChangeRequestService {
       throw new Error("Lop hoc khong ton tai");
     }
 
+    const targetCount = await ThanhVienNhom.count({
+      where: { id_nhom: targetGroupId }
+    });
+
+    if (targetCount >= Number(targetGroup.so_luong_toi_da || 0)) {
+      throw new Error("Nhom da day");
+    }
+
     if (!targetGroup || Number(targetGroup.id_lop) !== classId) {
       throw new Error("Nhom moi khong thuoc lop hoc nay");
     }
@@ -373,6 +381,73 @@ class GroupChangeRequestService {
 
     return request;
   }
+
+async cancelRequest(id_yeu_cau, actor) {
+  if (actor?.role !== "sinhvien" || !actor?.id_sinh_vien) {
+    throw new Error("Chi sinh vien moi duoc huy yeu cau");
+  }
+
+  const request = await YeuCauChuyenNhom.findOne({
+    where: {
+      id_yeu_cau: Number(id_yeu_cau),
+      id_sinh_vien: actor.id_sinh_vien,
+      trang_thai: "dang_cho_duyet"
+    }
+  });
+
+  if (!request) {
+    throw new Error("Khong tim thay yeu cau hop le de huy");
+  }
+
+  await request.destroy();
+
+  return {
+    id_yeu_cau,
+    message: "Da huy yeu cau chuyen nhom"
+  };
+}
+
+async getMyRequest(actor) {
+  if (actor?.role !== "sinhvien" || !actor?.id_sinh_vien) {
+    throw new Error("Chi sinh vien moi duoc xem yeu cau");
+  }
+
+  const request = await YeuCauChuyenNhom.findOne({
+    where: {
+      id_sinh_vien: actor.id_sinh_vien,
+      trang_thai: "dang_cho_duyet"
+    },
+    include: [
+      {
+        model: NhomHoc,
+        as: "nhom_cu",
+        attributes: ["id_nhom", "ten_nhom"]
+      },
+      {
+        model: NhomHoc,
+        as: "nhom_moi",
+        attributes: ["id_nhom", "ten_nhom"]
+      }
+    ],
+    order: [["id_yeu_cau", "DESC"]]
+  });
+
+  if (!request) {
+    return { has_request: false };
+  }
+
+  return {
+    has_request: true,
+    data: {
+      id_yeu_cau: request.id_yeu_cau,
+      nhom_cu: request.nhom_cu?.ten_nhom,
+      nhom_moi: request.nhom_moi?.ten_nhom,
+      ly_do: request.ly_do,
+      trang_thai: request.trang_thai
+    }
+  };
+}
+
 }
 
 module.exports = new GroupChangeRequestService();
