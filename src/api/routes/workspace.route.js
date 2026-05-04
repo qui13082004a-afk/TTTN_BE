@@ -10,8 +10,9 @@ const taskStatusController = require("../controllers/workspaceTaskStatus.control
 const taskDetailController = require("../controllers/workspaceTaskDetail.controller");
 const { authenticateToken } = require("../middlewares/auth.middleware");
 
-router.get("/messages/count", authenticateToken, workspaceController.getMessageCount);
-router.get("/messages", authenticateToken, workspaceController.getMessages);
+router.post("/:id_nhom/messages", authenticateToken, workspaceController.sendMessage);
+router.get("/:id_nhom/messages/count", authenticateToken, workspaceController.getMessageCount);
+router.get("/:id_nhom/messages", authenticateToken, workspaceController.getMessages);
 router.put("/messages/:id_tin_nhan/revoke", authenticateToken, workspaceController.revokeMessage);
 
 router.get("/:id_nhom", authenticateToken, workspaceController.getWorkspaceInfo);

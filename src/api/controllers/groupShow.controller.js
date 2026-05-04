@@ -2,10 +2,11 @@ const groupService = require("../services/groupShow.service");
 
 const getGroups = async (req, res) => {
   try {
-    const studentId = req.user?.id || req.query.id_sinh_vien;
+    const studentId = req.user?.id;
     const keyword = req.query.keyword || "";
+    const id_lop = req.query.id_lop || null;
 
-    const data = await groupService.getGroups(studentId, keyword);
+    const data = await groupService.getGroups(studentId, keyword, id_lop);
 
     return res.json({
       success: true,

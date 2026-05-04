@@ -8,7 +8,7 @@ const createTask = async (req, res) => {
       id_nhom,
       {
         ...req.body,
-        id_sinh_vien: req.user.id
+        id_sinh_vien: req.user.id_sinh_vien
       }
     );
 

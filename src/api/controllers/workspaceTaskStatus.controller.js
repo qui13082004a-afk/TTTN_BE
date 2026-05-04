@@ -8,7 +8,7 @@ const updateTaskStatus = async (req, res) => {
       id_cong_viec,
       {
         ...req.body,
-        id_sinh_vien: req.user.id
+        id_sinh_vien: req.user.id_sinh_vien
       }
     );
 

@@ -11,13 +11,13 @@ const {
 
 class GroupChangeRequestService {
   async createRequest(actor, { id_lop, id_nhom_moi, ly_do }) {
-    if (actor?.role !== "sinhvien" || !actor?.id_sinh_vien) {
+    if (actor?.role !== "sinhvien" || !actor?.id) {//
       throw new Error("Chi sinh vien moi duoc gui yeu cau chuyen nhom");
     }
 
     const classId = Number(id_lop);
     const targetGroupId = Number(id_nhom_moi);
-    const studentId = Number(actor.id_sinh_vien);
+    const studentId = Number(actor.id);//
 
     if (!classId || !targetGroupId) {
       throw new Error("ID lop va ID nhom moi la bat buoc");
@@ -383,14 +383,14 @@ class GroupChangeRequestService {
   }
 
 async cancelRequest(id_yeu_cau, actor) {
-  if (actor?.role !== "sinhvien" || !actor?.id_sinh_vien) {
+  if (actor?.role !== "sinhvien" || !actor?.id) {//
     throw new Error("Chi sinh vien moi duoc huy yeu cau");
   }
 
   const request = await YeuCauChuyenNhom.findOne({
     where: {
       id_yeu_cau: Number(id_yeu_cau),
-      id_sinh_vien: actor.id_sinh_vien,
+      id_sinh_vien: actor.id,//
       trang_thai: "dang_cho_duyet"
     }
   });
@@ -408,13 +408,13 @@ async cancelRequest(id_yeu_cau, actor) {
 }
 
 async getMyRequest(actor) {
-  if (actor?.role !== "sinhvien" || !actor?.id_sinh_vien) {
+  if (actor?.role !== "sinhvien" || !actor?.id) {//
     throw new Error("Chi sinh vien moi duoc xem yeu cau");
   }
 
   const request = await YeuCauChuyenNhom.findOne({
     where: {
-      id_sinh_vien: actor.id_sinh_vien,
+      id_sinh_vien: actor.id,//
       trang_thai: "dang_cho_duyet"
     },
     include: [
