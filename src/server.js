@@ -5,6 +5,9 @@ const app = express();
 const { SinhVienLopHoc } = require("./api/models");
 require("dotenv").config();
 
+const http = require("http");
+const { Server } = require("socket.io");
+
 const importRoute = require("./api/routes/index");
 
 const allowedOrigins = (process.env.CORS_ORIGIN || "*")
@@ -50,7 +53,42 @@ app.use("/api", importRoute);
 
 const PORT = process.env.PORT || 10000;
 
-app.listen(PORT, "0.0.0.0", async () => {
+// app.listen(PORT, "0.0.0.0", async () => {
+//   console.log(`>>> Server đang chạy tại port: ${PORT}`);
+
+//   try {
+//     await sequelize.authenticate();
+//     await SinhVienLopHoc.sync();
+//     console.log("Kết nối Database thành công! (Sequelize)");
+//   } catch (error) {
+//     console.error("Không thể kết nối Database:", error);
+//   }
+// });
+
+//socket.io
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "*"
+  }
+});
+
+global.io = io;
+
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
+
+  socket.on("join_group", (id_nhom) => {
+    socket.join(`group_${id_nhom}`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected");
+  });
+});
+
+server.listen(PORT, "0.0.0.0", async () => {
   console.log(`>>> Server đang chạy tại port: ${PORT}`);
 
   try {

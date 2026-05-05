@@ -21,18 +21,28 @@ if (keyword) {
   const groups = await NhomHoc.findAll({
     where: whereCondition,
     include: [
-      {
-        model: LopHoc,
-        as: "lop_hoc",
-        attributes: ["ten_lop", "han_chot_dang_ky"]
-      }
-    ]
+  {
+    model: LopHoc,
+    as: "lop_hoc",
+    attributes: ["ten_lop", "han_chot_dang_ky"]
+  },
+  {
+    model: ThanhVienNhom,
+    as: "thanh_vien",
+    attributes: ["id_sinh_vien"],
+    required: false   
+  }
+]
   });
 
   const now = new Date();
 
   const result = await Promise.all(
     groups.map(async (group) => {
+      const isMember = group.thanh_vien?.some(
+        (tv) => tv.id_sinh_vien === studentId
+      );
+
       const totalMembers = await ThanhVienNhom.count({
         where: { id_nhom: group.id_nhom }
       });
@@ -52,7 +62,8 @@ if (keyword) {
         ten_mon_hoc: group.lop_hoc?.ten_lop || "",
         so_thanh_vien: totalMembers,
         so_luong_toi_da: group.so_luong_toi_da,
-        trang_thai
+        trang_thai,
+        is_tham_gia: isMember ? "Đã tham gia" : "Chưa tham gia"
       };
     })
   );
