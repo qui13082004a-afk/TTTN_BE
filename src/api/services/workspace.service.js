@@ -108,10 +108,23 @@ if (!member) {
     thoi_gian_gui: new Date()
   });
 
+  const fullMessage = await TinNhan.findByPk(message.id_tin_nhan, {
+  include: [
+    {
+      model: SinhVien,
+      attributes: ["id_sinh_vien", "ho_ten", "avatar"]
+    }
+  ]
+});
+
+if (global.io) {
+  global.io.to(`group_${id_nhom}`).emit("new_message", fullMessage);
+} 
+
   return {
     success: true,
     message: "Gửi tin nhắn thành công",
-    data: message
+    data: fullMessage
   };
 };
 
@@ -132,30 +145,35 @@ const getMessageCount = async (userId) => {
 };
 
 const getMessages = async (id_nhom, id_sinh_vien) => {
-  const member = await ThanhVienNhom.findOne({
-  where: {
-    id_nhom,
-    id_sinh_vien
+
+  if (!id_nhom) {
+    throw new Error("Thiếu id_nhom");
   }
-});
 
-if (!member) {
-  throw new Error("Bạn không thuộc nhóm này");
-}
-
-const list = await TinNhan.findAll({
-  where: {
-    id_nhom,
-    da_thu_hoi: false
-  },
-  include: [
-    {
-      model: SinhVien,
-      attributes: ["id_sinh_vien", "ho_ten", "avatar"]
+  const member = await ThanhVienNhom.findOne({
+    where: {
+      id_nhom,
+      id_sinh_vien
     }
-  ],
-  order: [["thoi_gian_gui", "ASC"]]
-});
+  });
+
+  if (!member) {
+    throw new Error("Bạn không thuộc nhóm này");
+  }
+
+  const list = await TinNhan.findAll({
+    where: {
+      id_nhom,
+      da_thu_hoi: false
+    },
+    include: [
+      {
+        model: SinhVien,
+        attributes: ["id_sinh_vien", "ho_ten", "avatar"]
+      }
+    ],
+    order: [["thoi_gian_gui", "ASC"]]
+  });
 
   return {
     success: true,
@@ -175,13 +193,23 @@ const revokeMessage = async (userId, notificationId) => {
     throw new Error("Không tìm thấy tin nhắn");
   }
 
+  if (!notification.id_nhom) {
+    throw new Error("Tin nhắn không hợp lệ");
+  }
+
   if (notification.da_thu_hoi) {
   throw new Error("Tin nhắn đã được thu hồi trước đó");
 }
 
   await notification.update({
-    da_thu_hoi: true
+  da_thu_hoi: true
+});
+
+if (global.io) {
+  global.io.to(`group_${notification.id_nhom}`).emit("revoke_message", {
+    id_tin_nhan: notification.id_tin_nhan
   });
+}
 
   return {
     success: true,
